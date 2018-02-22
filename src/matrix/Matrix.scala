@@ -47,7 +47,7 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
 			case (e1, e2) => e1 + e2
 		}
 
-		return new Matrix(COLS, ROWS, resultData)
+		return new Matrix(ROWS, COLS, resultData)
 	}
 
 	//Element-wise Subtraction
@@ -56,7 +56,7 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
 			case (e1, e2) => e1 - e2
 		}
 
-		return new Matrix(COLS, ROWS, resultData)
+		return new Matrix(ROWS, COLS, resultData)
 	}
 
 	//Element-wise Multiplication
@@ -65,7 +65,7 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
 			case (e1, e2) => e1 * e2
 		}
 
-		return new Matrix(COLS, ROWS, resultData)
+		return new Matrix(ROWS, COLS, resultData)
 	}
 
 	//Element-wise Division
@@ -74,7 +74,7 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
 			case (e1, e2) => e1 / e2
 		}
 
-		return new Matrix(COLS, ROWS, resultData)
+		return new Matrix(ROWS, COLS, resultData)
 	}
 
 	//Dot Product //TODO - implement
