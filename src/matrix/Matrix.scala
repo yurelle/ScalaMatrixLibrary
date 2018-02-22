@@ -41,40 +41,32 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
 //		this.data.update(index, e)
 //	}
 
-	//Element-wise Addition
-	def +(that: Matrix): Matrix = {
+	def interleave(that: Matrix, operation: (Double, Double) => Double): Matrix = {
 		val resultData = (this.data zip that.data).map {
-			case (e1, e2) => e1 + e2
+			case (e1, e2) => operation(e1, e2)
 		}
 
 		return new Matrix(ROWS, COLS, resultData)
+	}
+
+	//Element-wise Addition
+	def +(that: Matrix): Matrix = {
+		return interleave(that, (x,y) => x+y )
 	}
 
 	//Element-wise Subtraction
 	def -(that: Matrix): Matrix = {
-		val resultData = (this.data zip that.data).map {
-			case (e1, e2) => e1 - e2
-		}
-
-		return new Matrix(ROWS, COLS, resultData)
+		return interleave(that, (x,y) => x-y )
 	}
 
 	//Element-wise Multiplication
 	def x(that: Matrix): Matrix = {
-		val resultData = (this.data zip that.data).map {
-			case (e1, e2) => e1 * e2
-		}
-
-		return new Matrix(ROWS, COLS, resultData)
+		return interleave(that, (x,y) => x*y )
 	}
 
 	//Element-wise Division
 	def /(that: Matrix): Matrix = {
-		val resultData = (this.data zip that.data).map {
-			case (e1, e2) => e1 / e2
-		}
-
-		return new Matrix(ROWS, COLS, resultData)
+		return interleave(that, (x,y) => x/y )
 	}
 
 	//Dot Product //TODO - implement
