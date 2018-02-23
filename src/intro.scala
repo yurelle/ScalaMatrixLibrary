@@ -5,12 +5,20 @@ object intro extends App {
 
 	val nums = ((0 to 10 by 2).toList :+ 16) ::: (50.to(60).by(5)).toList
 
-	val otherNums = nums.drop(3)
+	//View creates a lazily-evaluated translation map to the original data which then accumulates all modifications following it until it is "forced" (i.e. list.view.mapFilterEtc.force)
+	//Without the view (i.e. acting directly on a collection), causes a new complete collection to be build after EVERY function (map, filter, etc.)
+	//A view is equivalent to a stream, except that a stream caches calculated values, where as a view does not. Thus a stream is more efficient if you access values more than once, but
+	//A view is more efficient (smaller memory footprint, since no caching), if you're only going through the values once (like when forcing it).
+	//A scala view has also been compared to a SQL Database view (i.e. a non-cached translation matrix, pointing to the original data). The view can be access like this, calculating each
+	//value upon request, or it can be "forced", causing it to run through all elements, doing the translation for each, and generate a final resulting collection from them.
+	val otherNums = nums.view
+											.drop(3)
 											.withFilter( _%2 == 0) //.filter generates a new list; .withFilter just restricts visibility of the existing list
 											.map(v => v*10)
 									    .map(v => {
 											  "\nMy Num is: " + v
 										  })
+									  	.force
 
 	println("\nNums:\n---\n"+nums)
 	println("\nOtherNums:\n---\n"+otherNums)
