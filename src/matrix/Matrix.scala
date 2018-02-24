@@ -2,12 +2,13 @@ package matrix
 
 //See: https://www.scala-lang.org/api/2.12.x/scala/collection/immutable/IndexedSeq.html
 //See: https://medium.com/@hussachai/scalas-immutable-collections-can-be-slow-as-a-snail-da6fc24bc688
-class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
-	val numElements = ROWS*COLS
-
+//
+//Arrays don't fully implement collections API, and break the lazy-view chain. Convert to a full-collection type.
+//See: https://stackoverflow.com/questions/40517391/scala-view-force-is-not-a-member-of-seq
+class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]]) {
 
 	def this(ROWS:Int, COLS:Int) {
-		this(ROWS, COLS, Array.fill(ROWS*COLS){0.0}.toIndexedSeq)
+		this(ROWS, COLS, Array.fill(ROWS*COLS){0.0}.view.grouped(COLS).toIndexedSeq)
 	}
 
 	def getRowForIndex(index:Int): Int = {
@@ -31,8 +32,7 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
 
 	//Retrieve Value
 	def apply(rowIndex:Int, colIndex:Int): Number = {
-		val index = getIndexForRowCol(rowIndex, colIndex)
-		return this.data(index)
+		return this.data(rowIndex)(colIndex)
 	}
 
 	//Set Value
@@ -42,9 +42,34 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
 //	}
 
 	def interleave(that: Matrix, operation: (Double, Double) => Double): Matrix = {
-		val resultData = (this.data zip that.data).map {
-			case (e1, e2) => operation(e1, e2)
-		}
+		//2D - Super Fast - All On One Line
+//		val resultData = (this.data zip that.data).map({case (a1,a2) => (a1 zip a2).map{case (e1, e2) => e1 + e2}.toIndexedSeq})
+		val resultData =
+			(this.data zip that.data)
+			.map({
+				case (a1,a2) => {
+					(a1 zip a2).map{
+						case (e1, e2) => e1 + e2
+					}.toIndexedSeq
+				}
+			})
+
+		//2D - Super Fast - Broken Up
+		//See: http://blog.bruchez.name/2011/10/scala-partial-functions-without-phd.html
+		//See: https://alvinalexander.com/scala/fp-book-diffs-val-def-scala-functions
+//		val mapCols: PartialFunction[(Double,Double),Double] = {
+//			case (e1, e2) => operation(e1, e2)
+//		}
+//		val mapRows: PartialFunction[(IndexedSeq[Double],IndexedSeq[Double]),IndexedSeq[Double]] = {
+//			case (a1,a2) => (a1 zip a2).map(mapCols).toIndexedSeq
+//		}
+//		val resultData = (this.data zip that.data).map(mapRows)
+
+
+		//2D - Super Slow
+//		val resultData = (this.data.flatten zip that.data.flatten).map {
+//			case (e1, e2) => operation(e1, e2)
+//		}.grouped(COLS).toIndexedSeq
 
 		return new Matrix(ROWS, COLS, resultData)
 	}
@@ -69,71 +94,55 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[Double]) {
 		return interleave(that, (x,y) => x/y )
 	}
 
-	//Dot Product //TODO - implement
+	//Dot Product
 	def *(that: Matrix): Matrix = {
-		val thatT = that.transpose
+		require(this.COLS == that.ROWS)
 
-		for(rowIndex <- (0 until ROWS)) {
-
-		}
+		//Rotate second matrix for easier iteration
+		val thatTData = that.data.transpose
 
 		//Output dimensions are a merger of the two input matrices
-		val resultData = new Array[Double](this.ROWS * that.COLS)
+		val resultRows = this.ROWS
+		val resultCols = that.COLS
 
-		this.data.zipWithIndex.foreach{
-			case (e,i) => {
-				val rowIndex = getRowForIndex(i)
-				val colIndex = getColForIndex(i)
+		//Forcing the range to an iterator maintains the lazy evaluation through the call to grouped,
+		//creating a GroupedIterator, rather than evaluating the whole range.
+		val resultDimensions = (1 to (resultRows * resultCols)).iterator.grouped(resultCols)
 
-				//TODO extract the index calculation to a stateful utility (super class?) so you can keep the Matrix
-				//TODO object immutable, without having to create 2 of them here.
-				val toIndex = new Matrix(COLS, ROWS).getIndexForRowCol(colIndex, rowIndex)//rotated
-				resultData(toIndex) = e
+		val resultData = resultDimensions.zipWithIndex.map {
+			case (row, rowIndex) => {
+				row.indices.map(
+					(colIndex) => {
+						(this.data(rowIndex) zip thatTData(colIndex)).foldLeft(0.0) {
+							case (runningTotal, (thisElement, thatElement)) => {
+								runningTotal + (thisElement * thatElement)
+							}
+						}
+					}
+				)
 			}
-		}
+		}.toIndexedSeq
 
-		return new Matrix(COLS, ROWS, resultData)
+		return new Matrix(resultRows, resultCols, resultData)
 	}
 
 	//Transpose
 	def transpose: Matrix = {
-		val resultData = new Array[Double](numElements)
-
-		this.data.zipWithIndex.foreach{
-			case (e,i) => {
-				val rowIndex = getRowForIndex(i)
-				val colIndex = getColForIndex(i)
-
-				//TODO extract the index calculation to a stateful utility (super class?) so you can keep the Matrix
-				//TODO object immutable, without having to create 2 of them here.
-				val toIndex = new Matrix(COLS, ROWS).getIndexForRowCol(colIndex, rowIndex)//rotated
-				resultData(toIndex) = e
-			}
-		}
-
-		return new Matrix(COLS, ROWS, resultData)//Rotated
+		return new Matrix(COLS, ROWS, this.data.transpose)//Rotated
 	}
 
 
+	//2D
 	def print = {
 		println()
-		val lastRowIndex = COLS-1;
 
-		this.data.zipWithIndex.foreach{
-			case(e,i) => {
-				if ((i%COLS) == 0) {
-					printf("| ")
-				} else {
-					printf("  ")
-				}
+		//See: https://docs.scala-lang.org/overviews/core/string-interpolation.html
+		//See: https://stackoverflow.com/questions/9439535/is-foreach-by-definition-guaranteed-to-iterate-the-subject-collection-sequential
+		//See: https://stackoverflow.com/questions/11319111/fold-and-foldleft-method-difference (linear execution vs fork-tree)
+		val output = this.data.foldLeft("")((s:String, row:IndexedSeq[Double]) => {
+			s + (row.foldLeft("| ")((s:String, d:Double) => s + f"$d%10.2f\t") + "|\n")
+		})
 
-				printf(s"$e")
-
-				if ((i%COLS) == lastRowIndex) {
-					printf(" |\n")
-				}
-			}
-		}
+		println(output)
 	}
-
 }
