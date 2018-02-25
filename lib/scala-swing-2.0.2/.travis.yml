@@ -1,0 +1,19 @@
+language: scala
+
+env:
+  global:
+    # PGP_PASSPHRASE
+    - secure: "MIHv2s6njtXubCzbP/eYXszuO/Y3FADYATZpDtOULZmQHcQ8z+sccQHidyq6hvoK9/I2hRUrc5RIelfA7D32tqP7aF3P9Dq1ZdiWqZYmFKUl6wzJMhgWwnT1RA9Nu67PcNLZGwOe7+55zZpWVNbeTKMe05TzUaaGUgApr9wvS0I="
+    # SONA_USER
+    - secure: "e3FEhT76+qpmeubxtthmubnuyf5faCZneB1lQE8zv89/NZrD+v6tM8hGWatfiyyswmcaUdukxW/Q3NVlesKiy+cJLgNJ8AImRckKPiPVUYpXcQoc0R1Nyl4DeDyorGE17SslW28frlRU9OutTnZQlOfg4uqCdZuuCdcPV0lnGAU="
+    # SONA_PASS
+    - secure: "BLhtiCjcjvwB0lUvfrMa9CSvWDcdGkadAVFFPyuXSU2OQw/RR9dZF3/ZLILf9jHL3pWj/Scp8jWRl40y6sUxihUOXhhxpDCF8UVgnXdDCQf/W7gerRC/+3Zpr3LugVeSEuBgECld6XZnYNst/xbL9GHzEc7kDm7MIfz8nY8Ic7s="
+
+script: admin/build.sh
+
+jdk: oraclejdk8
+
+notifications:
+  email:
+    - adriaan.moors@typesafe.com
+    - andy@hicks.net

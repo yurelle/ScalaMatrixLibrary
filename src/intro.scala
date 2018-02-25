@@ -79,104 +79,8 @@ object intro extends App {
 	val (one,two) = tupleFunc()
 	println(s"\nCool Tuple Trick:\n---\nOne = $one\nTwo = $two")
 
-
-	/////////////////////////////////////////////////////////
-
-	val beforeInit = System.currentTimeMillis();
-	val dim = 1000
-
-	//Arrays don't fully implement collections API, and break the lazy-view chain. Convert to a full-collection type.
-	//See: https://stackoverflow.com/questions/40517391/scala-view-force-is-not-a-member-of-seq
-	val a1_2D:IndexedSeq[IndexedSeq[Double]] = Array.ofDim[Double](dim,dim).map(_.toIndexedSeq)
-	val a2_2D:IndexedSeq[IndexedSeq[Double]] = Array.ofDim[Double](dim,dim).map(_.toIndexedSeq)
-	val a1_1D = Array.ofDim[Double](dim*dim)
-	val a2_1D = Array.ofDim[Double](dim*dim)
-	val afterInit = System.currentTimeMillis();
-
-	println(s"\ninit took ${afterInit-beforeInit}ms")
-
-	println(s"\na1.flatten:\n---\n"+a1_2D.flatten)
-
-	def bench(f:() => Unit, name:String): (Long, Double) = {
-		printf(s"Starting task: $name...")
-
-		val numIterations = 10;
-		val beforeTask = System.currentTimeMillis();
-
-		for (_ <- 1 to  numIterations) {
-			f()
-		}
-
-		val afterTask = System.currentTimeMillis();
-		val total = afterTask-beforeTask;
-		val perRun = total/numIterations
-		println(s"Done! Took ${total}ms\t\t[${perRun}ms per run]")
-
-		return (total, perRun)
-	}
-
-	def t1_slow():IndexedSeq[IndexedSeq[Double]] = {
-		//Super slow
-		return (a1_2D.view.flatten.toList zip a2_2D.view.flatten.toList).map {
-			case (e1, e2) => e1 + e2
-		}.view.toIndexedSeq.grouped(dim).toIndexedSeq
-	}
-
-	def t1_fast():IndexedSeq[IndexedSeq[Double]] = {
-		//Really Fast
-		return (a1_2D zip a2_2D).map({case (a1,a2) => (a1 zip a2).map{case (e1, e2) => e1 + e2}.toIndexedSeq})
-	}
-
-	//Identical to t1_fast, just reorganized to make it easier to follow
-	def t1_fast_organized():IndexedSeq[IndexedSeq[Double]] = {
-		//Really Fast
-		//See: http://blog.bruchez.name/2011/10/scala-partial-functions-without-phd.html
-		//See: https://alvinalexander.com/scala/fp-book-diffs-val-def-scala-functions
-		val mapCols: PartialFunction[(Double,Double),Double] = {
-			case (e1, e2) => e1 + e2
-		}
-		val mapRows: PartialFunction[(IndexedSeq[Double],IndexedSeq[Double]),IndexedSeq[Double]] = {
-			case (a1,a2) => (a1 zip a2).map(mapCols).toIndexedSeq
-		}
-		return (a1_2D zip a2_2D).map(mapRows);
-	}
-
-	def t2():IndexedSeq[Double] = {
-		return (a1_1D zip a2_1D).map {
-			case (e1, e2) => e1 + e2
-		}
-	}
-
-	//--Do Benching
-	val t1_results = ListBuffer[(Long, Double)]()
-	val t2_results = ListBuffer[(Long, Double)]()
-
-	val numWarmups = 4;
-	println(s"\nRunning Warmups [$numWarmups]")
-	for(_ <- 1 to numWarmups) {
-		bench(t1_fast, "2D")
-		bench(t2, "1D")
-	}
-	println("Warmups Complete!")
-
-	val batchSize = 10
-	println(s"\nStarting tests [$batchSize]")
-	for(_ <- 1 to batchSize) {
-		t1_results.append(bench(t1_fast, "2D"))
-		t2_results.append(bench(t2, "1D"))
-	}
-	println("All tests complete!")
-
-	printf("\nCalculating stats...")
-	def sumTuple(e1:(Long, Double), e2:(Long, Double)): (Long,Double) = {
-		return (e1._1 + e2._1,
-						e1._2 + e2._2)
-	}
-
-	//See: https://stackoverflow.com/a/7764889/7206367
-	val (t1_results_totals, t1_results_avgs) = t1_results.unzip
-	val (t2_results_totals, t2_results_avgs) = t2_results.unzip
-
+	//Store case partial function
+	//
 	//See: https://damieng.com/blog/2014/12/11/sequence-averages-in-scala
 	//
 	//val average = seq.sum / seq.length
@@ -184,20 +88,23 @@ object intro extends App {
 	//  1. Visiting a sequence twice can be inefficient
 	//  2. Sum can overflow as it is the same type as the sequence
 	//  3. Applied to an integer without casting it returns an integer average
-	val t1_stats = (
-		t1_results_totals.reduce[Long](_+_),
-		t1_results_avgs.reduce[Double](_+_) / batchSize
-	)
-	val t2_stats = (
-		t2_results_totals.reduce[Long](_+_),
-		t2_results_avgs.reduce[Double](_+_) / batchSize
-	)
+	//
+	//See: http://blog.bruchez.name/2011/10/scala-partial-functions-without-phd.html
+	//See: https://alvinalexander.com/scala/fp-book-diffs-val-def-scala-functions
+	//See: https://stackoverflow.com/a/7764889/7206367
+	val s1 = Array[Long]  (1,2,3,4,5)
+	val s2 = Array[Double](6,7,8,9,10)
+	val length = s1.length
+	val reduceStats: PartialFunction[(IndexedSeq[Long], IndexedSeq[Double]), (Long, Double)] = {
+		case (e1:IndexedSeq[Long], e2:IndexedSeq[Double]) => (
+			e1.reduce[Long]  (_+_),
+			e2.reduce[Double](_+_) / length
+		)
+	}
+	println(s"\nAnonymous Case Function:\n---\n$reduceStats")
+	println(s"\nS1:\n---\n$s1")
+	println(s"\nS2:\n---\n$s2")
 
-//	val t1_totals = t1_results.reduce[(Long, Double)](sumTuple)
-//	val t2_totals = t2_results.reduce[(Long, Double)](sumTuple)
-	println("Done!")
-	println(s"\nResults:\n---")
-	println(s"T1:\t\tAvg [${t1_stats._2}ms]\tTotal [${t1_stats._1}]")
-	println(s"T2:\t\tAvg [${t2_stats._2}ms]\tTotal [${t2_stats._1}]")
-
+	val (s1_t, s2_t) = reduceStats(s1,s2)
+	println(s"\n\n---\nS1_T:$s1_t\tS2_T:$s2_t")
 }
