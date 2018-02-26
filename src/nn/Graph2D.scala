@@ -1,11 +1,10 @@
 package nn
 
-import java.awt.RenderingHints
-import java.awt.{BasicStroke, BorderLayout, Color}
+import java.awt.{BasicStroke, BorderLayout, Color, Font, RenderingHints}
 import java.awt.geom.{AffineTransform, Line2D}
 import javax.swing.UIManager
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import swing._
 import scala.swing._
 import scala.swing.Swing._
@@ -13,23 +12,54 @@ import scala.swing.event.MouseClicked
 import scala.util.Random
 
 object Graph2D extends SimpleSwingApplication {
-//object Graph2D {
 	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
 
-	//Init Data
-	val rand = Random
-	val numPoints = 4096
-	val coordSpace = new Rectangle(-500, -500, 1000, 1000)
-
+	//Init Perceptron
 	//2D coordinates = 2 inputs for perceptron (bias is internally managed)
 	val perceptron = new Perceptron(numInputs = 2, learningRate = 0.001)
-	val testData = Array.fill(numPoints) {
-		(rand.nextDouble() * coordSpace.width  + coordSpace.x,
-		 rand.nextDouble() * coordSpace.height + coordSpace.y)
+
+	//Init Data
+	val coordSpace = new Rectangle(-500, -500, 1000, 1000)
+	val rand = Random
+	val clickTrain = false
+	val preRenderPoints = false
+	var numPoints:Int = 0
+	val testData = new ArrayBuffer[(Double, Double)]()
+
+	//Generate Data Points
+	initTestData()
+
+	def initTestData() = {
+		val dataSetSize = 1024*6
+
+		//Determine Prerender Size
+		var numData:Int = -1
+		if (preRenderPoints) {
+			numData = dataSetSize
+		} else {
+			numData = 0
+		}
+
+		//Generate Data
+		for(_ <- 1 to numData) {
+			genNewDataPoint()
+		}
+	}
+
+	def genNewDataPoint() = {
+		//Increment Point Total
+		numPoints += 1
+
+		//Generate Point
+		testData.append(
+				( rand.nextDouble() * coordSpace.width  + coordSpace.x,
+					rand.nextDouble() * coordSpace.height + coordSpace.y)
+		)
 	}
 
 	val TF_m = (rand.nextDouble() * rand.nextInt()) % 1
-	val TF_b = (rand.nextDouble() * rand.nextInt()) % 500
+	val TF_b = (rand.nextDouble() * rand.nextInt()) % 250 //Don't use full range. We need to leave
+	//some headroom so there's enough points above the line to catch the predictions to train with.
 	def targetFunc(x: Double): Double = {
 		return (TF_m * x) + TF_b
 	}
@@ -46,25 +76,19 @@ object Graph2D extends SimpleSwingApplication {
 	}
 
 	def runTraining(): Unit = {
-		for (i <- 1 to 100) {
+		for (i <- 1 to 50) {
+			//Generate New Points
+			if (!preRenderPoints) {
+				genNewDataPoint()
+			}
+
+			//Train
 			testData.foreach {
 				case(x,y) => {
 					perceptron.train(IndexedSeq(x,y), test(x,y))
 				}
 			}
 		}
-
-//		val trainingSet = ListBuffer[IndexedSeq[Double]]()
-//		val targetSet = ListBuffer[Double]()
-//
-//		for (i <- 1 to 100) {
-//			val e = testData(Math.abs(rand.nextInt()) % numPoints)
-//			trainingSet.append(IndexedSeq(e._1, e._2))
-//			targetSet.append(test(e._1, e._2))
-//		}
-//		for (i <- 1 to 1) {
-//			perceptron.trainBatch(trainingSet.toIndexedSeq, targetSet.toIndexedSeq)
-//		}
 	}
 
 	val canvas = new Component {
@@ -72,20 +96,56 @@ object Graph2D extends SimpleSwingApplication {
 		minimumSize = preferredSize
 		maximumSize = preferredSize
 
+		//Init Timer
+		var isTaskRunning:Boolean = false
+		val timer = new java.util.Timer()
+		var task:java.util.TimerTask = null
+
+		def stopTask() = {
+			isTaskRunning = false
+
+			if (task != null) task.cancel()
+		}
+
+		//Inti Mouse Listener
 		listenTo(mouse.clicks)
 		reactions += {
 			case e: MouseClicked => {
-				runTraining()
-				repaint()
+				if (clickTrain) {
+					runTraining()
+					repaint()
+				} else {
+					if (isTaskRunning) {
+						//Halt Training
+						task.cancel();
+					} else {
+						//Init new training run (Can't reuse. Will throw exception if rescheduled)
+						task = new java.util.TimerTask {
+							def run() = {
+								runTraining()
+								repaint()
+							};
+						}
+
+						//Run first training batch
+						//
+						//If not prerendering points, the paint error-check will immediately
+						//kill the timer because there are zero points, and thus zero error.
+						runTraining()
+
+						//Schedule training task
+						timer.purge()
+						timer.schedule(task, 333, 333)
+					}
+
+					//Display Results
+					repaint()
+
+					//Toggle timer flag
+					isTaskRunning = !isTaskRunning
+				}
 			}
 		}
-
-		val timer = new java.util.Timer()
-		val task = new java.util.TimerTask {
-			def run() = repaint();
-		}
-		timer.schedule(task, 100, 100)
-//		task.cancel();
 
 		override def paintComponent(g: Graphics2D): Unit = {
 			//Yield to Parent
@@ -116,21 +176,63 @@ object Graph2D extends SimpleSwingApplication {
 
 			//Draw Data Points
 			//drawDataPoint(g, (100,100), true)
-			testData.map {
+			val sqError = testData.map {
 				case (x, y) => {
 					val pGuess = perceptron.feedForward(IndexedSeq(x,y))
 					val error = testError(x,y,pGuess)
 
 					(x.toInt, y.toInt, error)
 				}
-			}.foreach {
+			}.map {
 				case(x,y, error) => {
 					drawDataPoint(g, (x,y), error)
+
+					error
 				}
+			}.foldLeft[Double](0)(
+				(sum, e) => {
+					val scaledE = e/2 //Max error is 2, not 1
+					sum + (scaledE * scaledE)
+				}
+			)
+			val errorRate = sqError / testData.length
+			//.exists(_ != 0)
+
+			if (errorRate == 0) {
+				stopTask()
 			}
 
+	//--Print Directions
+			//Revert Y Axis Orientation (Otherwise, text prints upside down)
+			g.scale(1.0, -1.0)
+
+			//Init Font
+			val text = "Left Click to start & stop training"
+			val metrics = g.getFontMetrics()
+			val fontSize = 20
+			g.setFont(new Font("Tahoma", Font.PLAIN, fontSize))
+
+			//Draw Text Background
+			val textPadding = 10
+			val lineHeight = metrics.getHeight() + textPadding
+			val txtR = new Rectangle(0, 400, 330, lineHeight*2 + (textPadding*1.5).toInt)
+			g.setStroke(new BasicStroke(20))
+			g.setColor(Color.BLACK)
+			g.drawRect(txtR.x, txtR.y, txtR.width, txtR.height)
+			g.setColor(Color.CYAN)
+			g.fillRect(txtR.x, txtR.y, txtR.width, txtR.height)
+
+			//Draw Text
+			g.setColor(Color.BLACK)
+			var textPosition = 400 + lineHeight
+			g.drawString(text, textPadding, textPosition)
+
+			textPosition += lineHeight
+			g.drawString(f"[$numPoints points] Error Rate: $errorRate%.6f", textPadding, textPosition)
+
+
 			//Train Next Iteration (if we train before painting, we'll never paint the first frame)
-			runTraining()
+			//runTraining() --- Being called in mouse activated timer
 		}
 	}
 

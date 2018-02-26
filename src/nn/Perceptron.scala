@@ -28,33 +28,6 @@ class Perceptron(val numInputs:Int, val learningRate: Double) {
 		biasWeight += scaledAdjustmentFactor
 	}
 
-	def trainBatch(inputDataList:IndexedSeq[IndexedSeq[Double]], targets:IndexedSeq[Double]) = {
-		//Generate predictions
-		val guesses = inputDataList.map(
-			(inputData) => feedForward(inputData)
-		)
-
-		//Calculate error rate
-		val errors = (guesses zip targets).map {
-			case(guess, target) => target - guess
-		}
-		val avgError = errors.reduce(_+_) / inputDataList.length
-
-		//Adjust weights
-		val scaledAdjustmentFactor = avgError * learningRate
-//		weights = weights.map(w => w + (w * scaledAdjustmentFactor))
-		inputDataList.foreach(
-			(inputData) => {
-				weights = (weights zip inputData).map{
-					case(w,i) => w + (i * scaledAdjustmentFactor)
-				}
-			}
-		)
-
-		//Adjust bias weight
-		biasWeight += scaledAdjustmentFactor
-	}
-
 	def feedForward(inputs:IndexedSeq[Double]): Double = {
 		require(inputs.length == numInputs)
 
