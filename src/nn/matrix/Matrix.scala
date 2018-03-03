@@ -5,10 +5,15 @@ package nn.matrix
 //
 //Arrays don't fully implement collections API, and break the lazy-view chain. Convert to a full-collection type.
 //See: https://stackoverflow.com/questions/40517391/scala-view-force-is-not-a-member-of-seq
-class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]]) {
+//
+//Possible Numeric Generics
+//See: https://typelevel.org/blog/2013/07/07/generic-numeric-programming.html
+class Matrix(val data: IndexedSeq[IndexedSeq[Double]]) {
+	val ROWS:Int = data.length
+	val COLS:Int = if (ROWS > 0) data(0).length else 0
 
 	def this(ROWS:Int, COLS:Int) {
-		this(ROWS, COLS, Array.fill(ROWS*COLS){0.0}.view.grouped(COLS).toIndexedSeq)
+		this(Array.fill(ROWS*COLS){0.0}.toIndexedSeq.grouped(COLS).toIndexedSeq)
 	}
 
 	def getRowForIndex(index:Int): Int = {
@@ -23,16 +28,10 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]
 		return (rowIndex * COLS) + colIndex
 	}
 
-//	def getCoordinatesOfIndex(index:Int): (Int, Int) = {
-//		val curRow = getRowForIndex(index)
-//		val curCol = getColForIndex(index)
-//
-//		return (curRow, curCol)
-//	}
-
-	//Retrieve Value
-	def apply(rowIndex:Int, colIndex:Int): Number = {
-		return this.data(rowIndex)(colIndex)
+	//Forward element access notation to inner data structure. This allows treating the matrix like a native
+	//data structure (i.e. array, etc.). Ex: val myElement = myMatrix(3)(2)
+	def apply(rowIndex:Int): IndexedSeq[Double] = {
+		return this.data(rowIndex)
 	}
 
 	//Set Value
@@ -43,13 +42,13 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]
 
 	def interleave(that: Matrix, operation: (Double, Double) => Double): Matrix = {
 		//2D - Super Fast - All On One Line
-//		val resultData = (this.data zip that.data).map({case (a1,a2) => (a1 zip a2).map{case (e1, e2) => e1 + e2}.toIndexedSeq})
+//		val resultData = (this.data zip that.data).map({case (a1,a2) => (a1 zip a2).map{case (e1, e2) => operation(e1, e2)}.toIndexedSeq})
 		val resultData =
 			(this.data zip that.data)
 			.map({
 				case (a1,a2) => {
 					(a1 zip a2).map{
-						case (e1, e2) => e1 + e2
+						case (e1, e2) => operation(e1, e2)
 					}.toIndexedSeq
 				}
 			})
@@ -71,7 +70,12 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]
 //			case (e1, e2) => operation(e1, e2)
 //		}.grouped(COLS).toIndexedSeq
 
-		return new Matrix(ROWS, COLS, resultData)
+		return new Matrix(resultData)
+	}
+
+	def map(operation: (Double) => Double): Matrix = {
+		val resultData = this.data.map(_.map(e => operation(e)).toIndexedSeq)
+		return new Matrix(resultData)
 	}
 
 	//Element-wise Addition
@@ -85,7 +89,7 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]
 	}
 
 	//Element-wise Multiplication
-	def x(that: Matrix): Matrix = {
+	def *(that: Matrix): Matrix = {
 		return interleave(that, (x,y) => x*y )
 	}
 
@@ -95,8 +99,8 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]
 	}
 
 	//Dot Product
-	def *(that: Matrix): Matrix = {
-		require(this.COLS == that.ROWS)
+	def **(that: Matrix): Matrix = {
+		require(this.COLS == that.ROWS, s"this.COLS '${this.COLS}' is not equal to that.ROWS '${that.ROWS}'")
 
 		//Rotate second matrix for easier iteration
 		val thatTData = that.data.transpose
@@ -123,19 +127,24 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]
 			}
 		}.toIndexedSeq
 
-		return new Matrix(resultRows, resultCols, resultData)
+		return new Matrix(resultData)
 	}
 
 	//Transpose
 	def transpose: Matrix = {
-		return new Matrix(COLS, ROWS, this.data.transpose)//Rotated
+		return new Matrix(this.data.transpose)//Rotated
 	}
 
+	def toVector: Vector = {
+		val dataT = this.data.transpose
 
-	//2D
+		//Only allow 1D or empty data
+		require(dataT.length <= 1, s"dataT.length '${dataT.length}' is greater than 1")
+
+		return new Vector(dataT(0))
+	}
+
 	def print = {
-		println()
-
 		//See: https://docs.scala-lang.org/overviews/core/string-interpolation.html
 		//See: https://stackoverflow.com/questions/9439535/is-foreach-by-definition-guaranteed-to-iterate-the-subject-collection-sequential
 		//See: https://stackoverflow.com/questions/11319111/fold-and-foldleft-method-difference (linear execution vs fork-tree)
@@ -143,6 +152,6 @@ class Matrix(val ROWS:Int, val COLS:Int, val data: IndexedSeq[IndexedSeq[Double]
 			s + (row.foldLeft("| ")((s:String, d:Double) => s + f"$d%10.2f\t") + "|\n")
 		})
 
-		println(output)
+		printf(output)//output already ends in a new line; let calling code decide to add another
 	}
 }

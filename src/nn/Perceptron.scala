@@ -29,7 +29,7 @@ class Perceptron(val numInputs:Int, val learningRate: Double) {
 	}
 
 	def feedForward(inputs:IndexedSeq[Double]): Double = {
-		require(inputs.length == numInputs)
+		require(inputs.length == numInputs, s"inputs.length '${inputs.length}' is not equal to numInputs '$numInputs'")
 
 		//Apply Weights
 		val inputSum = (inputs zip weights).map{
