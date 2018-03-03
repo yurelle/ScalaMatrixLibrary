@@ -78,25 +78,20 @@ class Matrix(val data: IndexedSeq[IndexedSeq[Double]]) {
 		return new Matrix(resultData)
 	}
 
+	//Transpose
+	def transpose: Matrix = new Matrix(this.data.transpose)
+
 	//Element-wise Addition
-	def +(that: Matrix): Matrix = {
-		return interleave(that, (x,y) => x+y )
-	}
+	def +(that: Matrix): Matrix = interleave(that, (x,y) => x+y )
 
 	//Element-wise Subtraction
-	def -(that: Matrix): Matrix = {
-		return interleave(that, (x,y) => x-y )
-	}
+	def -(that: Matrix): Matrix = interleave(that, (x,y) => x-y )
 
 	//Element-wise Multiplication
-	def *(that: Matrix): Matrix = {
-		return interleave(that, (x,y) => x*y )
-	}
+	def *(that: Matrix): Matrix = interleave(that, (x,y) => x*y )
 
 	//Element-wise Division
-	def /(that: Matrix): Matrix = {
-		return interleave(that, (x,y) => x/y )
-	}
+	def /(that: Matrix): Matrix = interleave(that, (x,y) => x/y )
 
 	//Dot Product
 	def **(that: Matrix): Matrix = {
@@ -128,11 +123,6 @@ class Matrix(val data: IndexedSeq[IndexedSeq[Double]]) {
 		}.toIndexedSeq
 
 		return new Matrix(resultData)
-	}
-
-	//Transpose
-	def transpose: Matrix = {
-		return new Matrix(this.data.transpose)//Rotated
 	}
 
 	def toVector: Vector = {
