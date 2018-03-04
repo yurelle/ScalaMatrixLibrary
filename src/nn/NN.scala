@@ -5,94 +5,94 @@ import scala.util.Random
 
 
 /**
- * Legend:
- * -------
- * N: Node
- * W: Weight
- * B: Bias
- * I: Input Data
- * S: Sum
- * O: Output Data
- * T: Target Value (The expected output of training data)
- * E: Error (The difference between the output & the target)
- * LR: Learning Rate
- * **: Matrix Multiplication
- * fn_a(): Activation Function
- *
- *
- *                   [B1]
- *                     \
- *                      \
- * (N1) -> [I1] --W1--> (N3) -> [S1] --fn_a(S1)--> [O1]
- *             W2\  /
- *                \/
- *                /\
- *             W3/  \
- * (N2) -> [I2] --W4--> (N4) -> [S2] --fn_a(S2)--> [O2]
- *                      /
- *                     /
- *                   [B2]
- *
- *
- * Calculation Matrix:
- * -------------------
- *
- * N3 Weights Row --> | W1   W3 |    | I1 |   | B1 |   | S1 | <-- N3 Output
- *                    |         | ** |    | + |    | = |    |                 => Activation Function
- * N4 Weights Row --> | W2   W4 |    | I2 |   | B2 |   | S2 | <-- N4 Output
- *                      ^    ^
- *                      |    |
- *                     N1    N2
- *                 Source    Source
- *                 Column    Column
- *
- * Because matrix multiplication is of the form:
- *
- *     A.row * B.col = C.cell
- *
- * and, since the input matrix is a 1D vector, each row in the weights matrix will
- * produce a corresponding Single-Celled-Row in the result vector. And since matrix
- * multiplication is Fixed Direction specific, the result matrix/vector and input
- * vector, dictate the order/structure of the weights matrix (i.e. perpendicular
- * to the input vector).
- *
- * Activation:
- * -----------
- *
- * The only other calculation which needs to be done to finalize the output is to
- * pass the sum value through an activation function, to scale the output values to
- * a smooth & standardized activation range. This determines to what degree each
- * neuron is considered to be "firing" or "activating". Applying the activation
- * function does not affect the structure/order of the elements in the matrix/vector;
- * only their values.
- *
- *        | S1 |     | fn_a( S1 ) |   | O1 |
- * fn_a ( |    | ) = |            | = |    |
- *        | S2 |     | fn_a( S2 ) |   | O2 |
- *
- * Back Propagation:
- * -----------------
- *
- * Training the network constitutes adjusting the weights in all layers in the
- * direction which reduces the error, and in proportion to their affect on the result.
- * I.e. weights that only contributed a little are only adjusted a little, etc. The
- * calculation matrix is very similar to the forward calculations, except in reverse;
- * starting at the end result of the network, and traveling backwards through the
- * nodes & weights, towards the beginning.
- *
- * First, we use the Target values from the training data to calculate the error for
- * the first layer (in reverse order, i.e. the last layer in forward order):
- *
- * | T1 |   | O1 |   | E1 |
- * |    | - |    | = |    |
- * | T2 |   | O2 |   | E2 |
- *
- * //TODO
- *
- * Then, we multiply this against the weights matrix to determine the proportional
- * error responsibility for each node in the next-back layer.
- *
- */
+	* Legend:
+	* -------
+	* N: Node
+	* W: Weight
+	* B: Bias
+	* I: Input Data
+	* S: Sum
+	* O: Output Data
+	* T: Target Value (The expected output of training data)
+	* E: Error (The difference between the output & the target)
+	* LR: Learning Rate
+	* **: Matrix Multiplication
+	* fn_a(): Activation Function
+	*
+	*
+	*                   [B1]
+	*                     \
+	*                      \
+	* (N1) -> [I1] --W1--> (N3) -> [S1] --fn_a(S1)--> [O1]
+	*             W2\  /
+	*                \/
+	*                /\
+	*             W3/  \
+	* (N2) -> [I2] --W4--> (N4) -> [S2] --fn_a(S2)--> [O2]
+	*                      /
+	*                     /
+	*                   [B2]
+	*
+	*
+	* Calculation Matrix:
+	* -------------------
+	*
+	* N3 Weights Row --> | W1   W3 |    | I1 |   | B1 |   | S1 | <-- N3 Output
+	*                    |         | ** |    | + |    | = |    |                 => Activation Function
+	* N4 Weights Row --> | W2   W4 |    | I2 |   | B2 |   | S2 | <-- N4 Output
+	*                      ^    ^
+	*                      |    |
+	*                     N1    N2
+	*                 Source    Source
+	*                 Column    Column
+	*
+	* Because matrix multiplication is of the form:
+	*
+	*     A.row * B.col = C.cell
+	*
+	* and, since the input matrix is a 1D vector, each row in the weights matrix will
+	* produce a corresponding Single-Celled-Row in the result vector. And since matrix
+	* multiplication is Fixed Direction specific, the result matrix/vector and input
+	* vector, dictate the order/structure of the weights matrix (i.e. perpendicular
+	* to the input vector).
+	*
+	* Activation:
+	* -----------
+	*
+	* The only other calculation which needs to be done to finalize the output is to
+	* pass the sum value through an activation function, to scale the output values to
+	* a smooth & standardized activation range. This determines to what degree each
+	* neuron is considered to be "firing" or "activating". Applying the activation
+	* function does not affect the structure/order of the elements in the matrix/vector;
+	* only their values.
+	*
+	*        | S1 |     | fn_a( S1 ) |   | O1 |
+	* fn_a ( |    | ) = |            | = |    |
+	*        | S2 |     | fn_a( S2 ) |   | O2 |
+	*
+	* Back Propagation:
+	* -----------------
+	*
+	* Training the network constitutes adjusting the weights in all layers in the
+	* direction which reduces the error, and in proportion to their affect on the result.
+	* I.e. weights that only contributed a little are only adjusted a little, etc. The
+	* calculation matrix is very similar to the forward calculations, except in reverse;
+	* starting at the end result of the network, and traveling backwards through the
+	* nodes & weights, towards the beginning.
+	*
+	* First, we use the Target values from the training data to calculate the error for
+	* the first layer (in reverse order, i.e. the last layer in forward order):
+	*
+	* | T1 |   | O1 |   | E1 |
+	* |    | - |    | = |    |
+	* | T2 |   | O2 |   | E2 |
+	*
+	* //TODO
+	*
+	* Then, we multiply this against the weights matrix to determine the proportional
+	* error responsibility for each node in the next-back layer.
+	*
+	*/
 class NN(LAYOUT: IndexedSeq[Int]) {
 	val rand = new Random(123)
 	val layers = generateLayers()
