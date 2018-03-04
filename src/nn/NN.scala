@@ -1,6 +1,8 @@
 package nn
 
 import nn.matrix.{Matrix, Vector}
+
+import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 
@@ -80,17 +82,48 @@ import scala.util.Random
 	* starting at the end result of the network, and traveling backwards through the
 	* nodes & weights, towards the beginning.
 	*
-	* First, we use the Target values from the training data to calculate the error for
-	* the first layer (in reverse order, i.e. the last layer in forward order):
+	* First, we use the Target values from the training data to calculate the output error;
+	* this also corresponds to the first layer (in reverse order, i.e. the last layer in
+	* forward order):
 	*
 	* | T1 |   | O1 |   | E1 |
 	* |    | - |    | = |    |
 	* | T2 |   | O2 |   | E2 |
 	*
-	* //TODO
+	* Then, we use this error vector to feed backwards through the network, to distribute
+	* the error amongst all the nodes, based upon their influence/responsibility for that
+	* error (i.e. their weights).
 	*
-	* Then, we multiply this against the weights matrix to determine the proportional
-	* error responsibility for each node in the next-back layer.
+	*              [B1]
+	*              /
+	*             /
+	* [E1] --> (N3) <--W1-- (N1)
+	*                 \  /W2
+	*                  \/
+	*                  /\
+	*                 /  \W3
+	* [E2] --> (N4) <--W4-- (N2)
+	*            \
+	*             \
+	*             [B2]
+	*
+	*
+	* Error Calculation Matrix:
+	* -------------------------
+	*
+	* Since, matrix multiplication is Fixed Direction Specific, and since we are now going
+	* backwards through the network, we have to transpose the weight matrices before
+	* multiplying them with the error vectors.
+	*
+	*
+	* N1 Weights Row --> | W1   W2 |    | E1 |
+	*                    |         | ** |    | =
+	* N2 Weights Row --> | W3   W4 |    | E2 |
+	*                      ^    ^
+	*                      |    |
+	*                     N3    N4
+	*                 Source    Source
+	*                 Column    Column
 	*
 	* ========
 	*
@@ -133,24 +166,55 @@ class NN(LAYOUT: IndexedSeq[Int]) {
 							yield (
 								//Weights
 								new Matrix(
-									Array.fill(numOutputNodes * numInputNodes)
+									Array.fill(numInputNodes * numOutputNodes)
 										{rand.nextDouble}
 										.toIndexedSeq
-										.grouped(numOutputNodes)
+										.grouped(numInputNodes)
 										.toIndexedSeq
 								),
 								//Biases
 								new Vector(
-									Array.fill(numOutputNodes){rand.nextDouble}
+									Array.fill(numOutputNodes){rand.nextDouble},
+									vertical = true
 								)
 							)
 	}
 
-	def train(init_input_vector: Vector, target_vector: Vector): Unit = {
-		val predictions = feedForward(init_input_vector)
+	/**
+		* Supervised training
+		*
+		* @param init_input
+		* @param target
+		*/
+	def train(init_input: Vector, target: Vector): Vector = {
+		val (predictions, intermediateState) = feedForward(init_input)
 
-		val error = target_vector - predictions
+		val error = target - predictions
 
+		(layers zip intermediateState).foldRight(error) {
+			case((weights, biases), (sum, activatedSum), error) => {
+
+
+				//Return the calculated error for the next-previous layer
+			}
+		}
+
+		//TODO testing
+		println("\nInput:\n---")
+		init_input.println
+
+		println("\nOutput:\n---")
+		predictions.println
+
+		println("\nTarget:\n---")
+		target.println
+
+		println("\nError:\n---")
+		error.println
+
+
+
+		return error.toVector
 	}
 
 	/*
@@ -158,16 +222,15 @@ class NN(LAYOUT: IndexedSeq[Int]) {
 	 * Since, that is the format of our calculation (Weights matrix * input vector),
 	 * the result of this function will always be a vector.
 	 */
-	def feedForward(init_input_vector: Vector): Matrix = {
-		println("\ninit_input_vector:\n---\n")
-		init_input_vector.print
+	def feedForward(init_input: Vector): (Matrix, ListBuffer[(Vector,Vector)]) = {
+		println("\ninit_input:\n---\n")
+		init_input.print
 
-		val init_input_matrix = init_input_vector.transpose
-		println("\ninit_input_matrix:\n---\n")
-		init_input_matrix.print
-
-		val result = layers.foldLeft(init_input_matrix) {
-			case (inputs:Matrix, (weights:Matrix, biases:Vector)) => {
+		val result = layers.foldLeft((init_input:Matrix, ListBuffer[(Vector,Vector)]())) {
+			case (
+				(inputs:Matrix, intermediateStateList),
+				(weights:Matrix, biases:Vector)
+			) => {
 				println("\nWeights:\n---\n")
 				weights.print
 
@@ -175,14 +238,20 @@ class NN(LAYOUT: IndexedSeq[Int]) {
 				inputs.print
 
 				val sum = (weights ** inputs) + biases
+				val activatedSum = activate(sum).toVector
+
+				//Log State
+				intermediateStateList.append(
+					(sum.toVector, activatedSum)
+				)
 
 				//Feed activated output matrix as input to the next layer
-				activate(sum)
+				(activatedSum, intermediateStateList)
 			}
 		}
 
-		//Transpose matrix back to vector for return
-		return result.toVector
+		//Convert result back to vector for return
+		return result
 	}
 
 	/**
@@ -195,11 +264,10 @@ class NN(LAYOUT: IndexedSeq[Int]) {
 		* @param weightBiasSum
 		*/
 	def activate(weightBiasSum: Matrix): Matrix = {
-		return weightBiasSum.map((x) => { 1 / (1 - (Math.exp(x))) })
+		return weightBiasSum.map((x) => { 1 / (1 - Math.exp(x)) })
 	}
 
 	def print(): Unit = {
-		var layerIndex = 0
 		layers.foreach {
 			case(weights, biases) => {
 				println("\n===\n\nWeights:\n---")

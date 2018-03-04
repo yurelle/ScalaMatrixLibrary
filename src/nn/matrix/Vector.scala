@@ -2,7 +2,8 @@ package nn.matrix
 
 /**
 	* Orientation defaults to all elements on 1 row. To have a column vector,
-	* simply call myVector.transpose which will return an (N,1) matrix.
+	* simply call myVector.transpose, or use the constructor with the boolean
+	* "vertical" flag.
 	*
 	* Note: We use this class rather than the built-in Scala Vector class,
 	* so that we can use the bi-directional operator overloading defined in
@@ -14,25 +15,54 @@ package nn.matrix
 	* the next step, but I'm still new to all this, so cut me some slack. I
 	* think I did a pretty good job considering.
 	*
-	* @param LENGTH
 	* @param values
 	*/
-class Vector private(val LENGTH:Int, values: IndexedSeq[IndexedSeq[Double]])
+class Vector private(values: IndexedSeq[IndexedSeq[Double]])
 	extends Matrix(values) {
 
 	/**
 		* Only allow users of this class to create 1 dimensional vectors, but
 		* we need to create a 2D data structure to map to the parent matrix
 		* implementation.
-		*
-		* @param values
 		*/
-	def this(values: IndexedSeq[Double]) {
-		this(values.length, IndexedSeq(values))
+	def this(values: IndexedSeq[Double], vertical: Boolean) {
+		this(
+			if (vertical)
+				IndexedSeq(values).transpose
+			else
+				IndexedSeq(values)
+		)
+	}
+
+
+	def this(length:Int, vertical: Boolean) {
+		this(Array.fill[Double](length){0}.toIndexedSeq, vertical)
 	}
 
 	def this(LENGTH:Int) {
-		this(Array.fill[Double](LENGTH){0}.toIndexedSeq)
+		this(LENGTH, false)
+	}
+
+	override def transpose: Vector = new Vector(this.data.transpose)
+
+	def asHorizontal: Vector = {
+		val isVertical = this.ROWS > 1
+
+		if (isVertical) {
+			return this.transpose
+		} else {
+			return this //Since Vector's are immutable, there's no risk reusing the same instance
+		}
+	}
+
+	def asVertical: Vector = {
+		val isVertical = this.ROWS > 1
+
+		if (isVertical) {
+			return this //Since Vector's are immutable, there's no risk reusing the same instance
+		} else {
+			return this.transpose
+		}
 	}
 }
 

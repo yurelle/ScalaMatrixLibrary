@@ -9,24 +9,29 @@ object Graph2D_XOR extends SimpleSwingApplication {
 	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
 
 	//Init Network
-	val brain = new NN(IndexedSeq(2,2,1))
-	val inputTarget = IndexedSeq[((Int,Int),Int)](
-		(0,0) -> 0,
-		(0,1) -> 1,
-		(1,0) -> 1,
-		(1,1) -> 0
+	val brain = new NN(IndexedSeq(2,3,4))
+	val inputTarget = IndexedSeq[(IndexedSeq[Double],IndexedSeq[Double])](
+		IndexedSeq[Double](0,0) -> IndexedSeq[Double](0,0,0,1),//Output: OR, XOR, AND, NAND (Not And)
+		IndexedSeq[Double](0,1) -> IndexedSeq[Double](1,1,0,1),
+		IndexedSeq[Double](1,0) -> IndexedSeq[Double](1,1,0,1),
+		IndexedSeq[Double](1,1) -> IndexedSeq[Double](1,0,1,0)
 	).map{
-		case ((x1,x2),target) => {
-			(new Vector(IndexedSeq[Double](x1.toDouble,x2.toDouble)),
-			target)
+		case (inputs,targets) => {
+			(new Vector(inputs, true), new Vector(targets, true))
 		}
 	}
 
-	//Test
-	brain.print()
-	val results = brain.feedForward(inputTarget(0)._1)
-	println("\nResults:\n---\n")
-	results.print
+	//Test Feed Forward
+//	brain.print()
+//	val (results, intermediateState) = brain.feedForward(inputTarget(0)._1)
+//	println("\nResults:\n---\n")
+//	results.print
+
+	//Test Train
+//	brain.print()
+//	val error = brain.train(inputTarget(0)._1, inputTarget(0)._2)
+//	println("\nError:\n---\n")
+//	error.print
 
 	val canvas = new Component {
 

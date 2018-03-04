@@ -53,6 +53,14 @@ object intro extends App {
 		println(s"[$x, $y] = ${x+y}")
 	}
 
+	val forYieldList = for (i <- 1 to 10) yield s"\nElement $i"
+	println("\nFor Loop Yield List:\n---\n"+forYieldList)
+
+
+	//See: https://alvinalexander.com/scala/how-create-scala-list-range-fill-tabulate-constructors
+	val lispStyleList = 1 :: 2 :: 36 :: 81 :: Nil
+	println("\nLisp Style List:\n---\n"+lispStyleList)
+
 	val a = Array(1 to 9).grouped(3)
 	val aa = a.toArray
 	val aT = aa.transpose

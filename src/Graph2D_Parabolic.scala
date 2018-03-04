@@ -2,7 +2,7 @@ import javax.swing.UIManager
 
 import nn.NN
 
-import scala.swing.{BorderPanel, MainFrame, SimpleSwingApplication}
+import scala.swing.{BorderPanel, Component, Graphics2D, MainFrame, SimpleSwingApplication}
 
 object Graph2D_Parabolic extends SimpleSwingApplication {
 	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
@@ -10,7 +10,14 @@ object Graph2D_Parabolic extends SimpleSwingApplication {
 	//Init Network
 	val brain = new NN(IndexedSeq())
 
+	val canvas = new Component {
 
+		override def paintComponent(g: Graphics2D): Unit = {
+			//Yield to Parent
+			super.paintComponent(g)
+
+		}
+	}
 
 	var panel = new BorderPanel {
 		layout(canvas) = BorderPanel.Position.Center

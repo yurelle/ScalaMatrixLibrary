@@ -34,13 +34,11 @@ class Matrix(val data: IndexedSeq[IndexedSeq[Double]]) {
 		return this.data(rowIndex)
 	}
 
-	//Set Value
-//	def update(coord: Coordinate, e: Number): Unit = {
-//		val index = getIndexForRowCol(coord)
-//		this.data.update(index, e)
-//	}
-
 	def interleave(that: Matrix, operation: (Double, Double) => Double): Matrix = {
+		require(this.ROWS == that.ROWS && this.COLS == that.COLS,
+			s"Cannot perform element-wise operation; Matrices are different dimensions! " +
+			s"A[rows:${this.ROWS}, cols:${this.COLS}] -> B[rows:${that.ROWS}, cols:${that.COLS}]")
+
 		//2D - Super Fast - All On One Line
 //		val resultData = (this.data zip that.data).map({case (a1,a2) => (a1 zip a2).map{case (e1, e2) => operation(e1, e2)}.toIndexedSeq})
 		val resultData =
@@ -126,12 +124,30 @@ class Matrix(val data: IndexedSeq[IndexedSeq[Double]]) {
 	}
 
 	def toVector: Vector = {
-		val dataT = this.data.transpose
+		val vertical = this.ROWS > 1
+		val shortDimension = if (vertical) this.COLS else this.ROWS
+		val horizontalData = if (vertical) this.data.transpose else this.data
+		val array1D = horizontalData(0)
 
 		//Only allow 1D or empty data
-		require(dataT.length <= 1, s"dataT.length '${dataT.length}' is greater than 1")
+		require(shortDimension <= 1, s"Matrix is not a vector; short dimension > 1! " +
+			s"[rows: ${this.ROWS}, cols: ${this.COLS}]")
 
-		return new Vector(dataT(0))
+		return new Vector(array1D, vertical)
+	}
+
+	/*
+	 * Because the System.out.println is just a global function named "println",
+	 * implementing our own function called "println" overrides the whole namespace
+	 * inside this class for "println". All calling code will still work fine; they
+	 * can call the global println and matrix.println distinctly, but inside this
+	 * class, we can only use "printf". Otherwise, scala will think we mean to call
+	 * this function.
+	 */
+	def println = {
+		printf("\n")
+		print
+		printf("\n")
 	}
 
 	def print = {
