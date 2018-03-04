@@ -11,7 +11,7 @@ import scala.swing.Swing._
 import scala.swing.event.MouseClicked
 import scala.util.Random
 
-object Graph2D extends SimpleSwingApplication {
+object Graph2D_Linear extends SimpleSwingApplication {
 	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
 
 	//Init Perceptron

@@ -92,6 +92,16 @@ import scala.util.Random
 	* Then, we multiply this against the weights matrix to determine the proportional
 	* error responsibility for each node in the next-back layer.
 	*
+	* ========
+	*
+	* @param LAYOUT An array of integers indicating the number of nodes at each layer of
+	*               the network. The first layer is the number of input nodes, and the
+	*               last layer is the number of output nodes. All layers in between, are
+	*               the hidden layers. The order is from left to right, starting with the
+	*               input nodes, then the hidden layers, then ending with the output nodes.
+	*
+	*               Ex: (2,3,3,1) -> a network with 2 input nodes, 1 output node, and two
+	*               hidden layers, each consisting of 3 nodes.
 	*/
 class NN(LAYOUT: IndexedSeq[Int]) {
 	val rand = new Random(123)

@@ -1,12 +1,11 @@
 import javax.swing.UIManager
 
-import nn.Graph2D.canvas
 import nn.NN
 import nn.matrix.Vector
 
 import scala.swing.{BorderPanel, Component, Graphics2D, MainFrame, SimpleSwingApplication}
 
-object GraphXOR extends SimpleSwingApplication {
+object Graph2D_XOR extends SimpleSwingApplication {
 	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
 
 	//Init Network

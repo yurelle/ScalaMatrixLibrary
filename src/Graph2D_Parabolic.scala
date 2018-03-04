@@ -1,11 +1,10 @@
 import javax.swing.UIManager
 
-import GraphXOR.canvas
 import nn.NN
 
 import scala.swing.{BorderPanel, MainFrame, SimpleSwingApplication}
 
-object Graph_Parabolic extends SimpleSwingApplication {
+object Graph2D_Parabolic extends SimpleSwingApplication {
 	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
 
 	//Init Network
