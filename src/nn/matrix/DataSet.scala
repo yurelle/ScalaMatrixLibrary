@@ -18,9 +18,9 @@ class DataSet(val data: IndexedSeq[IndexedSeq[Double]]) {
 
 	//Forward element access notation to inner data structure. This allows treating the matrix like a native
 	//data structure (i.e. array, etc.). Ex: val myElement = myMatrix(3)(2)
-//	def apply(rowIndex:Int): IndexedSeq[Double] = {
-//		return this.data(rowIndex)
-//	}
+	def apply(rowIndex:Int): IndexedSeq[Double] = {
+		return this.data(rowIndex)
+	}
 
 	def interleave(that: DataSet, operation: (Double, Double) => Double): IndexedSeq[IndexedSeq[Double]] = {
 		require(this.ROWS == that.ROWS && this.COLS == that.COLS,
@@ -60,48 +60,10 @@ class DataSet(val data: IndexedSeq[IndexedSeq[Double]]) {
 		return resultData
 	}
 
-	def map(operation: (Double) => Double): DataSet = {
-		val resultData = this.data.map(_.map(e => operation(e)).toIndexedSeq)
-		return new DataSet(resultData)
-	}
-
-	//Transpose
-	def transpose: DataSet = new DataSet(this.data.transpose)
-
-	//Element-wise Dual Matrix Functions
-	def +(that: DataSet): DataSet = new DataSet(interleave(that, _+_))
-	def -(that: DataSet): DataSet = new DataSet(interleave(that, _-_))
-	def *(that: DataSet): DataSet = new DataSet(interleave(that, _*_))
-	def /(that: DataSet): DataSet = new DataSet(interleave(that, _/_))
-
-	//Element-wise Scalar Functions
-	def +(num: Double): DataSet = this.map(_ + num)
-	def +(num: Float): DataSet = this.map(_ + num)
-	def +(num: Long): DataSet = this.map(_ + num)
-	def +(num: Int): DataSet = this.map(_ + num)
-
-	def -(num: Double): DataSet = this.map(_ - num)
-	def -(num: Float): DataSet = this.map(_ - num)
-	def -(num: Long): DataSet = this.map(_ - num)
-	def -(num: Int): DataSet = this.map(_ - num)
-
-	def *(num: Double): DataSet = this.map(_ * num)
-	def *(num: Float): DataSet = this.map(_ * num)
-	def *(num: Long): DataSet = this.map(_ * num)
-	def *(num: Int): DataSet = this.map(_ * num)
-
-	def /(num: Double): DataSet = this.map(_ / num)
-	def /(num: Float): DataSet = this.map(_ / num)
-	def /(num: Long): DataSet = this.map(_ / num)
-	def /(num: Int): DataSet = this.map(_ / num)
-
 	//Dot Product
 	//
 	//A Matrix times a vector always results in a vector
-	def **(that: Vector): Vector = {
-		return this.**(that:DataSet).toVector
-	}
-	def **(that: DataSet): DataSet = {
+	def _doDotProduct(that: DataSet): IndexedSeq[IndexedSeq[Double]] = {
 		require(this.COLS == that.ROWS, s"this.COLS '${this.COLS}' is not equal to that.ROWS '${that.ROWS}'")
 
 		//Rotate second matrix for easier iteration
@@ -129,20 +91,7 @@ class DataSet(val data: IndexedSeq[IndexedSeq[Double]]) {
 			}
 		}.toIndexedSeq
 
-		return new DataSet(resultData)
-	}
-
-	def toVector: Vector = {
-		val vertical = this.ROWS > 1
-		val shortDimension = if (vertical) this.COLS else this.ROWS
-		val horizontalData = if (vertical) this.data.transpose else this.data
-		val array1D = horizontalData(0)
-
-		//Only allow 1D or empty data
-		require(shortDimension <= 1, s"Matrix is not a vector; short dimension > 1! " +
-			s"[rows: ${this.ROWS}, cols: ${this.COLS}]")
-
-		return new Vector(array1D, vertical)
+		return resultData
 	}
 
 	/*
@@ -159,14 +108,31 @@ class DataSet(val data: IndexedSeq[IndexedSeq[Double]]) {
 		printf("\n")
 	}
 
+	def println(title: String) = {
+		printf("\n")
+		print(title)
+		printf("\n")
+	}
+
+	def print(title: String) = {
+		printf(s"$title:\n---\n"+this.toString)
+	}
+
 	def print = {
+		printf(this.toString)
+	}
+
+	override def toString = {
 		//See: https://docs.scala-lang.org/overviews/core/string-interpolation.html
 		//See: https://stackoverflow.com/questions/9439535/is-foreach-by-definition-guaranteed-to-iterate-the-subject-collection-sequential
 		//See: https://stackoverflow.com/questions/11319111/fold-and-foldleft-method-difference (linear execution vs fork-tree)
 		val output = this.data.foldLeft("")((s:String, row:IndexedSeq[Double]) => {
-			s + (row.foldLeft("| ")((s:String, d:Double) => s + f"$d%10.2f\t") + "|\n")
+			s + (row.foldLeft("| ")((s:String, d:Double) => s + f"$d%10.5f\t") + "|\n")
 		})
 
-		printf(output)//output already ends in a new line; let calling code decide to add another
+		//Trim last new line - let calling code decide to add a new line
+		val trimmed = output.substring(0, output.length-1)
+
+		trimmed
 	}
 }

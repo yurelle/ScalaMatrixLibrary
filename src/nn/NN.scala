@@ -42,16 +42,15 @@ import scala.util.Random
 	* Calculation Matrix:
 	* -------------------
 	*
-	*                         W      **    I   +   B    =   S
+	*                 W      **    I   +   B    =   S
 	*
-	* N3 Weights Row --> | W1   W3 |    | I1 |   | B1 |   | S1 | <-- N3 Output
-	*                    |         | ** |    | + |    | = |    |                 => Activation Function
-	* N4 Weights Row --> | W2   W4 |    | I2 |   | B2 |   | S2 | <-- N4 Output
-	*                      ^    ^
-	*                      |    |
-	*                     N1    N2
-	*                 Source    Source
-	*                 Column    Column
+	* N3 Row --> | W1   W3 |    | I1 |   | B1 |   | S1 | <-- N3 Output
+	*            |         | ** |    | + |    | = |    |                => Activation Function
+	* N4 Row --> | W2   W4 |    | I2 |   | B2 |   | S2 | <-- N4 Output
+	*              ^    ^
+	*              |    |
+	*             N1    N2
+	*         Column    Column
 	*
 	* Because matrix multiplication is of the form:
 	*
@@ -81,7 +80,7 @@ import scala.util.Random
 	*
 	*       1
 	* ------------
-	*  1 - e^(-x)
+	*  1 + e^(-x)
 	*
 	* Back Propagation:
 	* -----------------
@@ -186,9 +185,9 @@ import scala.util.Random
 	*               hidden layers, each consisting of 3 nodes.
 	*/
 class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
-	val rand = new Random(123)
-	val layers = generateLayers()
-	val a = 1
+//	val rand = new Random(123)
+	val rand = Random
+	var layers = generateLayers()
 
 	def generateLayers(): IndexedSeq[(Matrix, Vector)] = {
 		//Turn the LAYOUT list, into a list of tuples of the gaps between the elements.
@@ -243,26 +242,28 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 				(inputs:Vector, intermediateStateList),
 				(weights:Matrix, biases:Vector)
 			) => {
-//				println("\nWeights:\n---\n")
-//				weights.print
-//
-//				println("\nInputs:\n---\n")
-//				inputs.print
+				val sum = (weights ** inputs) + biases
+				val activatedSum = activate(sum)
+
+//				weights.println("Weights")
+//				inputs.println("Inputs")
+//				biases.println("Biases")
+//				sum.println("Sum")
+//				activatedSum.println("ActivatedSum")
 //
 //				println("\n===")
 
-				val sum = (weights ** inputs) + biases
-				val activatedSum = activate(sum).toVector
-
 				//Log State
 				intermediateStateList.append(
-					(inputs, sum.toVector, activatedSum)
+					(inputs, sum, activatedSum)
 				)
 
 				//Feed activated output matrix as input to the next layer
 				(activatedSum, intermediateStateList)
 			}
 		}
+
+//		result._1.println("Result")
 
 		//Convert result back to vector for return
 		return result
@@ -274,41 +275,35 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 		* @param init_input
 		* @param target
 		*/
-	def train(init_input: Vector, target: Vector): Vector = {
+	def train(init_input: Vector, target: Vector): (Vector, Vector) = {
 		val (predictions, intermediateState) = feedForward(init_input)
 
 		val init_error = target - predictions
 
+//		println("\n\n\n++++====++++\nStarting Training\n++++====++++\n")
+
 		//Propagate Backwards
-		(layers zip intermediateState).foldRight(((ListBuffer[Matrix](), ListBuffer[Vector]()), init_error)) {
-			case(
+		val results = (layers zip intermediateState).foldRight(
+			(//Initial Fold Values
 				(
-					(init_weights, init_biases),
+					ListBuffer[Matrix](),//New Weights
+					ListBuffer[Vector]() //New Biases
+				),
+				init_error
+			)
+		) {
+			case (//Iteration Parameters
+				(//Current Iteration Layer Data
+					(curWeights:Matrix, curBiases:Vector),
 					(inputs, sum, activatedSum)
 				),
-				(
-					(newWeights, newBiases),
+				(//Result from last iteration
+					(newWeightsList:ListBuffer[Matrix], newBiasesList:ListBuffer[Vector]),
 					error
 				)
-			) => {
-//				println("\nWeights:\n---\n")
-//				weights.print
-//
-//				println("\nBiases:\n---\n")
-//				biases.print
+			) => {//Function Body
 
-//				println("\nSum:\n---\n")
-//				sum.print
-
-//				println("\nActivatedSum:\n---\n")
-//				activatedSum.print
-
-//				println("\nError:\n---\n")
-//				error.print
-
-//				println("\n===")
-
-				val w_T = init_weights.transpose
+				val w_T = curWeights.transpose
 				val i_T = inputs.transpose
 				val nextError = w_T ** error
 				val derivative = activatedSum * (1 - activatedSum)
@@ -316,30 +311,54 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 				val weightsDelta = gradient ** i_T
 				val biasesDelta = gradient //Bias input is always 1, so we can ignore it
 
-				newWeights.append(init_weights + weightsDelta)
-				newBiases.prepend(init_biases + biasesDelta)
+				//Store the new layer configuration
+				//
+				//List Buffer Prepend Performance = "Fast Constant Time"
+				//See: https://docs.scala-lang.org/overviews/collections/performance-characteristics.html
+				val newWeights = curWeights + weightsDelta
+				val newBiases = curBiases + biasesDelta
+				newWeightsList.prepend(newWeights)
+				newBiasesList.prepend(newBiases)
+
+
+//				init_weights.println("init_weights")
+//				init_biases.println("init_biases")
+//				sum.println("Sum")
+//				activatedSum.println("ActivatedSum")
+//				error.println("Error")
+//				derivative.println("Derivative")
+//				gradient.println("Gradient")
+//				weightsDelta.println("weightsDelta")
+//				biasesDelta.println("biasesDelta")
+//				newWeight.println("newWeights")
+//				newBias.println("newBiases")
+//
+//				println("\n===")
 
 				//Return the calculated error for the next-previous layer
-				((newWeights, newBiases), nextError)
+				((newWeightsList, newBiasesList), nextError)
 			}
 		}
 
 		//TODO testing
-		println("\nInput:\n---")
-		init_input.println
+//		init_input.println("Input")
+//		predictions.println("Output")
+//		target.println("Target")
+//		init_error.println("Initial Error")
 
-		println("\nOutput:\n---")
-		predictions.println
-
-		println("\nTarget:\n---")
-		target.println
-
-		println("\nInitial Error:\n---")
-		init_error.println
+		//Update Layers
+		val ((newWeights, newBiases), _) = results
+		layers = newWeights.toIndexedSeq zip newBiases.toIndexedSeq
 
 
+//		println("\n\n\n++++====++++\nEnding Training\n++++====++++\n")
 
-		return init_error.toVector
+		//Calculate post train error
+		val (postTrainPredictions, _) = feedForward(init_input)
+		val postTrainError = target - postTrainPredictions
+
+		//Return Initial Error
+		return (init_error, postTrainError)
 	}
 
 	/**
@@ -347,22 +366,20 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 		*
 		*       1
 		* ------------
-		*  1 - e^(-x)
+		*  1 + e^(-x)
 		*
 		* @param weightBiasSum
 		*/
-	def activate(weightBiasSum: Matrix): Matrix = {
-		return weightBiasSum.map((x) => { 1 / (1 - Math.exp(x)) })
+	def activate(weightBiasSum: Vector): Vector = {
+		return weightBiasSum.map((x) => { 1 / (1 + Math.exp(-x)) })
 	}
 
 	def print(): Unit = {
 		layers.foreach {
 			case(weights, biases) => {
-				println("\n===\n\nWeights:\n---")
-				weights.print
-
-				println("\nBiases:\n---")
-				biases.print
+				println("\n===\n")
+				weights.println("Weights")
+				biases.println("Biases")
 			}
 		}
 		println("\n===")

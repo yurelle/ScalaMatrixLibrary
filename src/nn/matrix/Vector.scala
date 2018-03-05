@@ -18,7 +18,7 @@ package nn.matrix
 	* @param values
 	*/
 class Vector private(values: IndexedSeq[IndexedSeq[Double]])
-	extends Matrix(values) {
+	extends DataSet(values) {
 
 	/**
 		* Only allow users of this class to create 1 dimensional vectors, but
@@ -44,12 +44,12 @@ class Vector private(values: IndexedSeq[IndexedSeq[Double]])
 	}
 
 
-	override def map(operation: (Double) => Double): Vector = {
+	def map(operation: (Double) => Double): Vector = {
 		val resultData = this.data.map(_.map(e => operation(e)).toIndexedSeq)
 		return new Vector(resultData)
 	}
 
-	override def transpose: Vector = new Vector(this.data.transpose)
+	def transpose: Vector = new Vector(this.data.transpose)
 
 	//Element-wise Dual Vector Functions
 	def +(that: Vector): Vector = new Vector(interleave(that, _+_))
@@ -58,31 +58,31 @@ class Vector private(values: IndexedSeq[IndexedSeq[Double]])
 	def /(that: Vector): Vector = new Vector(interleave(that, _/_))
 
 	//Element-wise Scalar Functions
-	override def +(num: Double): Vector = this.map(_ + num)
-	override def +(num: Float): Vector = this.map(_ + num)
-	override def +(num: Long): Vector = this.map(_ + num)
-	override def +(num: Int): Vector = this.map(_ + num)
+	def +(num: Double): Vector = this.map(_ + num)
+	def +(num: Float): Vector = this.map(_ + num)
+	def +(num: Long): Vector = this.map(_ + num)
+	def +(num: Int): Vector = this.map(_ + num)
 
-	override def -(num: Double): Vector = this.map(_ - num)
-	override def -(num: Float): Vector = this.map(_ - num)
-	override def -(num: Long): Vector = this.map(_ - num)
-	override def -(num: Int): Vector = this.map(_ - num)
+	def -(num: Double): Vector = this.map(_ - num)
+	def -(num: Float): Vector = this.map(_ - num)
+	def -(num: Long): Vector = this.map(_ - num)
+	def -(num: Int): Vector = this.map(_ - num)
 
-	override def *(num: Double): Vector = this.map(_ * num)
-	override def *(num: Float): Vector = this.map(_ * num)
-	override def *(num: Long): Vector = this.map(_ * num)
-	override def *(num: Int): Vector = this.map(_ * num)
+	def *(num: Double): Vector = this.map(_ * num)
+	def *(num: Float): Vector = this.map(_ * num)
+	def *(num: Long): Vector = this.map(_ * num)
+	def *(num: Int): Vector = this.map(_ * num)
 
-	override def /(num: Double): Vector = this.map(_ / num)
-	override def /(num: Float): Vector = this.map(_ / num)
-	override def /(num: Long): Vector = this.map(_ / num)
-	override def /(num: Int): Vector = this.map(_ / num)
+	def /(num: Double): Vector = this.map(_ / num)
+	def /(num: Float): Vector = this.map(_ / num)
+	def /(num: Long): Vector = this.map(_ / num)
+	def /(num: Int): Vector = this.map(_ / num)
 
 	//Dot Product
 	//
 	//A Matrix times a vector always results in a vector
-	override def **(that:Matrix): Vector = {
-		return (super.**(that:Matrix)).toVector
+	def **(that:Matrix): Vector = {
+		return new Vector(super._doDotProduct(that:Matrix))
 	}
 
 	/**
@@ -104,10 +104,10 @@ class Vector private(values: IndexedSeq[IndexedSeq[Double]])
 		* @param that
 		* @return
 		*/
-//	override def **(that:Vector): Matrix = {
-//		return super.**(that:Matrix)
-//	}//TODO perhaps need to split this inheritance tree to a base class that both matrix & vector inheret from directly
-		//TODO or finally refactor to pimp the standard Vector class
+	def **(that:Vector): Matrix = {
+		return new Matrix(super._doDotProduct(that))
+	}//TODO perhaps need to split this inheritance tree to a base class that both matrix & vector inheret from directly
+	//TODO or finally refactor to pimp the standard Vector class
 
 	def asHorizontal: Vector = {
 		val isVertical = this.ROWS > 1
