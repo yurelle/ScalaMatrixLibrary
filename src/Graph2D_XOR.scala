@@ -9,7 +9,7 @@ object Graph2D_XOR extends SimpleSwingApplication {
 	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
 
 	//Init Network
-	val brain = new NN(IndexedSeq(2,3,4))
+	val brain = new NN(IndexedSeq(2,3,4), LR = 0.01)
 	val inputTarget = IndexedSeq[(IndexedSeq[Double],IndexedSeq[Double])](
 		IndexedSeq[Double](0,0) -> IndexedSeq[Double](0,0,0,1),//Output: OR, XOR, AND, NAND (Not And)
 		IndexedSeq[Double](0,1) -> IndexedSeq[Double](1,1,0,1),
@@ -29,7 +29,7 @@ object Graph2D_XOR extends SimpleSwingApplication {
 
 	//Test Train
 //	brain.print()
-//	val error = brain.train(inputTarget(0)._1, inputTarget(0)._2)
+	val error = brain.train(inputTarget(0)._1, inputTarget(0)._2)
 //	println("\nError:\n---\n")
 //	error.print
 

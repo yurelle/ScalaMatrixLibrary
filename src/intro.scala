@@ -115,4 +115,40 @@ object intro extends App {
 
 	val (s1_t, s2_t) = reduceStats(s1,s2)
 	println(s"\n\n---\nS1_T:$s1_t\tS2_T:$s2_t")
+
+	//Just like in java, the varArgs param must be the last param.
+	//See: https://alvinalexander.com/scala/how-to-define-methods-variable-arguments-varargs-fields
+	def varArgsInt(init: Double, args:Int*): Double = {
+		if (args.isEmpty)
+			init
+		else
+			init + args.reduce(_+_)
+	}
+	println("\nVarArgsInt [empty varArgs]:\n---\n" + varArgsInt(99))
+	println("\nVarArgsInt [with varArgs]:\n---\n" + varArgsInt(1000, 4, 30, 200))
+
+	def varArgsAny(startingList: ListBuffer[String], someMoreElements:Any*): List[String] = {
+		someMoreElements.foreach(
+			a => startingList.append(a.toString)
+		)
+
+		return startingList.toList
+	}
+	println("\nVarArgsAny [empty varArgs]:\n---\n" + varArgsAny(ListBuffer[String]("Nothing_to_see_here")))
+	println("\nVarArgsAny [with varArgs]:\n---\n" + varArgsAny(ListBuffer[String]("Some Stuff"), 1, 'c', 3.14, "And Me"))
+
+	def splat(items: String*) = {
+		items.foreach(println)
+	}
+	val myItems = IndexedSeq[String]("one", "two", "three", "four")
+	println("\nSplat:\n---")
+	splat(myItems:_*)
+
+	//Null vs Nil
+	//See: https://sanaulla.info/2009/07/12/nothingness-2/
+	//val nullPrimitive:Int = null //Compile Fails
+	val nullObject:AnyRef = null
+	val nullList:List[String] = null
+	val emptyList:List[String] = Nil
+	val emptyOptional = None
 }

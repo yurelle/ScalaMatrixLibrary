@@ -8,7 +8,7 @@ object Graph2D_Parabolic extends SimpleSwingApplication {
 	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
 
 	//Init Network
-	val brain = new NN(IndexedSeq())
+	val brain = new NN(IndexedSeq(), 0.01)
 
 	val canvas = new Component {
 

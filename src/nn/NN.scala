@@ -17,9 +17,12 @@ import scala.util.Random
 	* O: Output Data
 	* T: Target Value (The expected output of training data)
 	* E: Error (The difference between the output & the target)
+	* PL_E: Previous Layer Error
 	* LR: Learning Rate
+	* ▲: Delta; i.e. "Change" (Type Alt+30, Windows with US SYSTEM LOCAL)
 	* **: Matrix Multiplication
-	* fn_a(): Activation Function
+	* afn(): Activation Function
+	* afn'(): Derivative of Activation Function
 	*
 	*
 	*                   [B1]
@@ -38,6 +41,8 @@ import scala.util.Random
 	*
 	* Calculation Matrix:
 	* -------------------
+	*
+	*                         W      **    I   +   B    =   S
 	*
 	* N3 Weights Row --> | W1   W3 |    | I1 |   | B1 |   | S1 | <-- N3 Output
 	*                    |         | ** |    | + |    | = |    |                 => Activation Function
@@ -68,9 +73,15 @@ import scala.util.Random
 	* function does not affect the structure/order of the elements in the matrix/vector;
 	* only their values.
 	*
-	*        | S1 |     | fn_a( S1 ) |   | O1 |
-	* fn_a ( |    | ) = |            | = |    |
-	*        | S2 |     | fn_a( S2 ) |   | O2 |
+	*       | S1 |     | afn( S1 ) |   | O1 |
+	* afn ( |    | ) = |           | = |    |
+	*       | S2 |     | afn( S2 ) |   | O2 |
+	*
+	* The activation function used is the sigmoid function:
+	*
+	*       1
+	* ------------
+	*  1 - e^(-x)
 	*
 	* Back Propagation:
 	* -----------------
@@ -86,9 +97,11 @@ import scala.util.Random
 	* this also corresponds to the first layer (in reverse order, i.e. the last layer in
 	* forward order):
 	*
-	* | T1 |   | O1 |   | E1 |
+	*   T    -   O    =   E
+	*
+	* | T1 |   | O1 |   | E1 | <-- N3 Error
 	* |    | - |    | = |    |
-	* | T2 |   | O2 |   | E2 |
+	* | T2 |   | O2 |   | E2 | <-- N4 Error
 	*
 	* Then, we use this error vector to feed backwards through the network, to distribute
 	* the error amongst all the nodes, based upon their influence/responsibility for that
@@ -115,15 +128,51 @@ import scala.util.Random
 	* backwards through the network, we have to transpose the weight matrices before
 	* multiplying them with the error vectors.
 	*
+	* 1. Calculate next layer's error using initial (unmodified) weights. This is not used in this
+	* iteration of the calculation, it is simply passed on to the next iteration. However, we have
+	* to do it first, since we need to use the initial unmodified weights, before we update them.
 	*
-	* N1 Weights Row --> | W1   W2 |    | E1 |
-	*                    |         | ** |    | =
-	* N2 Weights Row --> | W3   W4 |    | E2 |
+	*                    (Weigh Matrix
+	*                    Transposed)
+	*
+	*                        W_T     **   E    =   PL_E
+	*
+	* N1 Weights Row --> | W1   W2 |    | E1 |   | PL_E1 | <-- N1 Error (Previous Layer Error 1)
+	*                    |         | ** |    | = |       |
+	* N2 Weights Row --> | W3   W4 |    | E2 |   | PL_E2 | <-- N2 Error (Previous Layer Error 2)
 	*                      ^    ^
 	*                      |    |
 	*                     N3    N4
 	*                 Source    Source
 	*                 Column    Column
+	*
+	* 2. Calculate the gradient descent ▲Weights. Since we're going backwards, we also need the
+	* "reverse" of the activation function; i.e. it's derivative. The derivative of our sigmoid
+	* function is:
+	*
+	* afn'(x) = afn(x) * (1 - afn(x))
+	*
+	* But, since we're keeping track of the internal state, we already have the value of afn(x),
+	* stored as the Sum before activation. We can reuse that, to make the function:
+	*
+	* afn'(x) = S * (1 - S)
+	*
+	* So, our matrix equation is:
+	*                                        (Input Vector
+	*                                         Transposed)
+	*
+	*    LR    *    E    *    afn'(S)     **     I_T     =       ▲W
+	*
+	*             | E1 |         | S1 |                    | ▲W1   ▲W2 |
+	*    LR    *  |    | * afn'( |    | ) ** | I1   I2 | = |            |
+	* (Scalar)    | E2 |         | S2 |                    | ▲W3   ▲W4 |
+	*
+	*
+	*
+	*
+	*
+	*
+	*
 	*
 	* ========
 	*
@@ -136,7 +185,7 @@ import scala.util.Random
 	*               Ex: (2,3,3,1) -> a network with 2 input nodes, 1 output node, and two
 	*               hidden layers, each consisting of 3 nodes.
 	*/
-class NN(LAYOUT: IndexedSeq[Int]) {
+class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 	val rand = new Random(123)
 	val layers = generateLayers()
 	val a = 1
@@ -180,6 +229,45 @@ class NN(LAYOUT: IndexedSeq[Int]) {
 							)
 	}
 
+	/*
+	 * A matrix multiplied by a vector always results in a vector output.
+	 * Since, that is the format of our calculation (Weights matrix * input vector),
+	 * the result of this function will always be a vector.
+	 */
+	def feedForward(init_input: Vector): (Vector, ListBuffer[(Vector,Vector,Vector)]) = {
+//		println("\ninit_input:\n---\n")
+//		init_input.print
+
+		val result = layers.foldLeft((init_input:Vector, ListBuffer[(Vector,Vector,Vector)]())) {
+			case (
+				(inputs:Vector, intermediateStateList),
+				(weights:Matrix, biases:Vector)
+			) => {
+//				println("\nWeights:\n---\n")
+//				weights.print
+//
+//				println("\nInputs:\n---\n")
+//				inputs.print
+//
+//				println("\n===")
+
+				val sum = (weights ** inputs) + biases
+				val activatedSum = activate(sum).toVector
+
+				//Log State
+				intermediateStateList.append(
+					(inputs, sum.toVector, activatedSum)
+				)
+
+				//Feed activated output matrix as input to the next layer
+				(activatedSum, intermediateStateList)
+			}
+		}
+
+		//Convert result back to vector for return
+		return result
+	}
+
 	/**
 		* Supervised training
 		*
@@ -189,13 +277,50 @@ class NN(LAYOUT: IndexedSeq[Int]) {
 	def train(init_input: Vector, target: Vector): Vector = {
 		val (predictions, intermediateState) = feedForward(init_input)
 
-		val error = target - predictions
+		val init_error = target - predictions
 
-		(layers zip intermediateState).foldRight(error) {
-			case((weights, biases), (sum, activatedSum), error) => {
+		//Propagate Backwards
+		(layers zip intermediateState).foldRight(((ListBuffer[Matrix](), ListBuffer[Vector]()), init_error)) {
+			case(
+				(
+					(init_weights, init_biases),
+					(inputs, sum, activatedSum)
+				),
+				(
+					(newWeights, newBiases),
+					error
+				)
+			) => {
+//				println("\nWeights:\n---\n")
+//				weights.print
+//
+//				println("\nBiases:\n---\n")
+//				biases.print
 
+//				println("\nSum:\n---\n")
+//				sum.print
+
+//				println("\nActivatedSum:\n---\n")
+//				activatedSum.print
+
+//				println("\nError:\n---\n")
+//				error.print
+
+//				println("\n===")
+
+				val w_T = init_weights.transpose
+				val i_T = inputs.transpose
+				val nextError = w_T ** error
+				val derivative = activatedSum * (1 - activatedSum)
+				val gradient = LR * error * derivative
+				val weightsDelta = gradient ** i_T
+				val biasesDelta = gradient //Bias input is always 1, so we can ignore it
+
+				newWeights.append(init_weights + weightsDelta)
+				newBiases.prepend(init_biases + biasesDelta)
 
 				//Return the calculated error for the next-previous layer
+				((newWeights, newBiases), nextError)
 			}
 		}
 
@@ -209,49 +334,12 @@ class NN(LAYOUT: IndexedSeq[Int]) {
 		println("\nTarget:\n---")
 		target.println
 
-		println("\nError:\n---")
-		error.println
+		println("\nInitial Error:\n---")
+		init_error.println
 
 
 
-		return error.toVector
-	}
-
-	/*
-	 * A matrix multiplied by a vector always results in a vector output.
-	 * Since, that is the format of our calculation (Weights matrix * input vector),
-	 * the result of this function will always be a vector.
-	 */
-	def feedForward(init_input: Vector): (Matrix, ListBuffer[(Vector,Vector)]) = {
-		println("\ninit_input:\n---\n")
-		init_input.print
-
-		val result = layers.foldLeft((init_input:Matrix, ListBuffer[(Vector,Vector)]())) {
-			case (
-				(inputs:Matrix, intermediateStateList),
-				(weights:Matrix, biases:Vector)
-			) => {
-				println("\nWeights:\n---\n")
-				weights.print
-
-				println("\nInputs:\n---\n")
-				inputs.print
-
-				val sum = (weights ** inputs) + biases
-				val activatedSum = activate(sum).toVector
-
-				//Log State
-				intermediateStateList.append(
-					(sum.toVector, activatedSum)
-				)
-
-				//Feed activated output matrix as input to the next layer
-				(activatedSum, intermediateStateList)
-			}
-		}
-
-		//Convert result back to vector for return
-		return result
+		return init_error.toVector
 	}
 
 	/**

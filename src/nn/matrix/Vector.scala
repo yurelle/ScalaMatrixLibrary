@@ -43,7 +43,71 @@ class Vector private(values: IndexedSeq[IndexedSeq[Double]])
 		this(LENGTH, false)
 	}
 
+
+	override def map(operation: (Double) => Double): Vector = {
+		val resultData = this.data.map(_.map(e => operation(e)).toIndexedSeq)
+		return new Vector(resultData)
+	}
+
 	override def transpose: Vector = new Vector(this.data.transpose)
+
+	//Element-wise Dual Vector Functions
+	def +(that: Vector): Vector = new Vector(interleave(that, _+_))
+	def -(that: Vector): Vector = new Vector(interleave(that, _-_))
+	def *(that: Vector): Vector = new Vector(interleave(that, _*_))
+	def /(that: Vector): Vector = new Vector(interleave(that, _/_))
+
+	//Element-wise Scalar Functions
+	override def +(num: Double): Vector = this.map(_ + num)
+	override def +(num: Float): Vector = this.map(_ + num)
+	override def +(num: Long): Vector = this.map(_ + num)
+	override def +(num: Int): Vector = this.map(_ + num)
+
+	override def -(num: Double): Vector = this.map(_ - num)
+	override def -(num: Float): Vector = this.map(_ - num)
+	override def -(num: Long): Vector = this.map(_ - num)
+	override def -(num: Int): Vector = this.map(_ - num)
+
+	override def *(num: Double): Vector = this.map(_ * num)
+	override def *(num: Float): Vector = this.map(_ * num)
+	override def *(num: Long): Vector = this.map(_ * num)
+	override def *(num: Int): Vector = this.map(_ * num)
+
+	override def /(num: Double): Vector = this.map(_ / num)
+	override def /(num: Float): Vector = this.map(_ / num)
+	override def /(num: Long): Vector = this.map(_ / num)
+	override def /(num: Int): Vector = this.map(_ / num)
+
+	//Dot Product
+	//
+	//A Matrix times a vector always results in a vector
+	override def **(that:Matrix): Vector = {
+		return (super.**(that:Matrix)).toVector
+	}
+
+	/**
+		* Depending upon the orientations of the input vectors, the output
+		* of a Dot Product (i.e. matrix multiplication) between 2 vectors
+		* will either be a single value, or a matrix. Since we have to set
+		* a fixed return type, and can't overload based solly on return
+		* type, we choose the greater of the two, and return a matrix.
+		*
+		*              | D |
+		* [A, B, C] ** | E | = (AD + BC + CF) [Single Value]
+		*              | F |
+		*
+		* | A |                  | AD   AE   AF |
+		* | B |  **  [D, E, F] = | BD   BE   BF |
+		* | C |                  | CD   CE   CF |
+		*
+		*
+		* @param that
+		* @return
+		*/
+//	override def **(that:Vector): Matrix = {
+//		return super.**(that:Matrix)
+//	}//TODO perhaps need to split this inheritance tree to a base class that both matrix & vector inheret from directly
+		//TODO or finally refactor to pimp the standard Vector class
 
 	def asHorizontal: Vector = {
 		val isVertical = this.ROWS > 1

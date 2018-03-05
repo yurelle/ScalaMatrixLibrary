@@ -1,5 +1,7 @@
 package nn.matrix
 
+import nn.matrix._
+
 //See: https://www.scala-lang.org/api/2.12.x/scala/collection/immutable/IndexedSeq.html
 //See: https://medium.com/@hussachai/scalas-immutable-collections-can-be-slow-as-a-snail-da6fc24bc688
 //
@@ -16,25 +18,13 @@ class Matrix(val data: IndexedSeq[IndexedSeq[Double]]) {
 		this(Array.fill(ROWS*COLS){0.0}.toIndexedSeq.grouped(COLS).toIndexedSeq)
 	}
 
-	def getRowForIndex(index:Int): Int = {
-		return Math.floor(index / COLS).toInt
-	}
-
-	def getColForIndex(index:Int): Int = {
-		return index % COLS;
-	}
-
-	def getIndexForRowCol(rowIndex:Int, colIndex:Int): Int = {
-		return (rowIndex * COLS) + colIndex
-	}
-
 	//Forward element access notation to inner data structure. This allows treating the matrix like a native
 	//data structure (i.e. array, etc.). Ex: val myElement = myMatrix(3)(2)
-	def apply(rowIndex:Int): IndexedSeq[Double] = {
-		return this.data(rowIndex)
-	}
+//	def apply(rowIndex:Int): IndexedSeq[Double] = {
+//		return this.data(rowIndex)
+//	}
 
-	def interleave(that: Matrix, operation: (Double, Double) => Double): Matrix = {
+	def interleave(that: Matrix, operation: (Double, Double) => Double): IndexedSeq[IndexedSeq[Double]] = {
 		require(this.ROWS == that.ROWS && this.COLS == that.COLS,
 			s"Cannot perform element-wise operation; Matrices are different dimensions! " +
 			s"A[rows:${this.ROWS}, cols:${this.COLS}] -> B[rows:${that.ROWS}, cols:${that.COLS}]")
@@ -68,7 +58,8 @@ class Matrix(val data: IndexedSeq[IndexedSeq[Double]]) {
 //			case (e1, e2) => operation(e1, e2)
 //		}.grouped(COLS).toIndexedSeq
 
-		return new Matrix(resultData)
+		//return new Matrix(resultData)
+		return resultData
 	}
 
 	def map(operation: (Double) => Double): Matrix = {
@@ -79,19 +70,39 @@ class Matrix(val data: IndexedSeq[IndexedSeq[Double]]) {
 	//Transpose
 	def transpose: Matrix = new Matrix(this.data.transpose)
 
-	//Element-wise Addition
-	def +(that: Matrix): Matrix = interleave(that, (x,y) => x+y )
+	//Element-wise Dual Matrix Functions
+	def +(that: Matrix): Matrix = new Matrix(interleave(that, _+_))
+	def -(that: Matrix): Matrix = new Matrix(interleave(that, _-_))
+	def *(that: Matrix): Matrix = new Matrix(interleave(that, _*_))
+	def /(that: Matrix): Matrix = new Matrix(interleave(that, _/_))
 
-	//Element-wise Subtraction
-	def -(that: Matrix): Matrix = interleave(that, (x,y) => x-y )
+	//Element-wise Scalar Functions
+	def +(num: Double): Matrix = this.map(_ + num)
+	def +(num: Float): Matrix = this.map(_ + num)
+	def +(num: Long): Matrix = this.map(_ + num)
+	def +(num: Int): Matrix = this.map(_ + num)
 
-	//Element-wise Multiplication
-	def *(that: Matrix): Matrix = interleave(that, (x,y) => x*y )
+	def -(num: Double): Matrix = this.map(_ - num)
+	def -(num: Float): Matrix = this.map(_ - num)
+	def -(num: Long): Matrix = this.map(_ - num)
+	def -(num: Int): Matrix = this.map(_ - num)
 
-	//Element-wise Division
-	def /(that: Matrix): Matrix = interleave(that, (x,y) => x/y )
+	def *(num: Double): Matrix = this.map(_ * num)
+	def *(num: Float): Matrix = this.map(_ * num)
+	def *(num: Long): Matrix = this.map(_ * num)
+	def *(num: Int): Matrix = this.map(_ * num)
+
+	def /(num: Double): Matrix = this.map(_ / num)
+	def /(num: Float): Matrix = this.map(_ / num)
+	def /(num: Long): Matrix = this.map(_ / num)
+	def /(num: Int): Matrix = this.map(_ / num)
 
 	//Dot Product
+	//
+	//A Matrix times a vector always results in a vector
+	def **(that: Vector): Vector = {
+		return this.**(that:Matrix).toVector
+	}
 	def **(that: Matrix): Matrix = {
 		require(this.COLS == that.ROWS, s"this.COLS '${this.COLS}' is not equal to that.ROWS '${that.ROWS}'")
 
