@@ -233,10 +233,11 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 	 * Since, that is the format of our calculation (Weights matrix * input vector),
 	 * the result of this function will always be a vector.
 	 */
+	def feedForward(inputVals: Double*): (Vector, ListBuffer[(Vector,Vector,Vector)]) = {
+		val inputVector = new Vector(inputVals.toIndexedSeq, vertical = true)
+		return feedForward(inputVector)
+	}
 	def feedForward(init_input: Vector): (Vector, ListBuffer[(Vector,Vector,Vector)]) = {
-//		println("\ninit_input:\n---\n")
-//		init_input.print
-
 		val result = layers.foldLeft((init_input:Vector, ListBuffer[(Vector,Vector,Vector)]())) {
 			case (
 				(inputs:Vector, intermediateStateList),
@@ -244,14 +245,6 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 			) => {
 				val sum = (weights ** inputs) + biases
 				val activatedSum = activate(sum)
-
-//				weights.println("Weights")
-//				inputs.println("Inputs")
-//				biases.println("Biases")
-//				sum.println("Sum")
-//				activatedSum.println("ActivatedSum")
-//
-//				println("\n===")
 
 				//Log State
 				intermediateStateList.append(
@@ -262,8 +255,6 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 				(activatedSum, intermediateStateList)
 			}
 		}
-
-//		result._1.println("Result")
 
 		//Convert result back to vector for return
 		return result
@@ -277,10 +268,7 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 		*/
 	def train(init_input: Vector, target: Vector): (Vector, Vector) = {
 		val (predictions, intermediateState) = feedForward(init_input)
-
 		val init_error = target - predictions
-
-//		println("\n\n\n++++====++++\nStarting Training\n++++====++++\n")
 
 		//Propagate Backwards
 		val results = (layers zip intermediateState).foldRight(
@@ -303,11 +291,14 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 				)
 			) => {//Function Body
 
+				//Calculate Next Error
 				val w_T = curWeights.transpose
-				val i_T = inputs.transpose
 				val nextError = w_T ** error
-				val derivative = activatedSum * (1 - activatedSum)
+
+				//Calculate ▲Weights
+				val derivative = deactivate(activatedSum)
 				val gradient = LR * error * derivative
+				val i_T = inputs.transpose
 				val weightsDelta = gradient ** i_T
 				val biasesDelta = gradient //Bias input is always 1, so we can ignore it
 
@@ -320,44 +311,20 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 				newWeightsList.prepend(newWeights)
 				newBiasesList.prepend(newBiases)
 
-
-//				init_weights.println("init_weights")
-//				init_biases.println("init_biases")
-//				sum.println("Sum")
-//				activatedSum.println("ActivatedSum")
-//				error.println("Error")
-//				derivative.println("Derivative")
-//				gradient.println("Gradient")
-//				weightsDelta.println("weightsDelta")
-//				biasesDelta.println("biasesDelta")
-//				newWeight.println("newWeights")
-//				newBias.println("newBiases")
-//
-//				println("\n===")
-
 				//Return the calculated error for the next-previous layer
 				((newWeightsList, newBiasesList), nextError)
 			}
 		}
 
-		//TODO testing
-//		init_input.println("Input")
-//		predictions.println("Output")
-//		target.println("Target")
-//		init_error.println("Initial Error")
-
 		//Update Layers
 		val ((newWeights, newBiases), _) = results
 		layers = newWeights.toIndexedSeq zip newBiases.toIndexedSeq
-
-
-//		println("\n\n\n++++====++++\nEnding Training\n++++====++++\n")
 
 		//Calculate post train error
 		val (postTrainPredictions, _) = feedForward(init_input)
 		val postTrainError = target - postTrainPredictions
 
-		//Return Initial Error
+		//Return Error
 		return (init_error, postTrainError)
 	}
 
@@ -372,6 +339,17 @@ class NN(LAYOUT: IndexedSeq[Int], LR: Double) {
 		*/
 	def activate(weightBiasSum: Vector): Vector = {
 		return weightBiasSum.map((x) => { 1 / (1 + Math.exp(-x)) })
+	}
+
+	/**
+		* The derivative of the sigmoid function used is:
+		*
+		* y * (1 - y)
+		*
+		* @param weightBiasSum
+		*/
+	def deactivate(weightBiasSum: Vector): Vector = {
+		return weightBiasSum.map((y) => { y * (1 - y) })
 	}
 
 	def print(): Unit = {

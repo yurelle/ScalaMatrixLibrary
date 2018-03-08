@@ -16,15 +16,26 @@ class DataSet(val data: IndexedSeq[IndexedSeq[Double]]) {
 		this(Array.fill(ROWS*COLS){0.0}.toIndexedSeq.grouped(COLS).toIndexedSeq)
 	}
 
-	//Forward element access notation to inner data structure. This allows treating the matrix like a native
-	//data structure (i.e. array, etc.). Ex: val myElement = myMatrix(3)(2)
-	def apply(rowIndex:Int): IndexedSeq[Double] = {
-		return this.data(rowIndex)
+	def zip(that:DataSet):IndexedSeq[IndexedSeq[(Double,Double)]] = {
+		require(this.ROWS == that.ROWS && this.COLS == that.COLS,
+			s"Cannot perform zip (element-wise operation); DataSets are different dimensions! " +
+			s"A[rows:${this.ROWS}, cols:${this.COLS}] -> B[rows:${that.ROWS}, cols:${that.COLS}]")
+
+		val resultData =
+			(this.data zip that.data)
+				.map({
+					case (a1,a2) => {
+						(a1 zip a2)
+					}
+				}
+			)
+
+		return resultData;
 	}
 
 	def interleave(that: DataSet, operation: (Double, Double) => Double): IndexedSeq[IndexedSeq[Double]] = {
 		require(this.ROWS == that.ROWS && this.COLS == that.COLS,
-			s"Cannot perform element-wise operation; Matrices are different dimensions! " +
+			s"Cannot perform element-wise operation; DataSets are different dimensions! " +
 			s"A[rows:${this.ROWS}, cols:${this.COLS}] -> B[rows:${that.ROWS}, cols:${that.COLS}]")
 
 		//2D - Super Fast - All On One Line
@@ -115,14 +126,19 @@ class DataSet(val data: IndexedSeq[IndexedSeq[Double]]) {
 	}
 
 	def print(title: String) = {
-		printf(s"$title:\n---\n"+this.toString)
+		printf(this.toString(title))
 	}
 
 	def print = {
 		printf(this.toString)
 	}
 
-	override def toString = {
+	def toString(title: String): String = {
+		return s"$title:\n---\n"+this.toString
+	}
+
+
+	override def toString: String = {
 		//See: https://docs.scala-lang.org/overviews/core/string-interpolation.html
 		//See: https://stackoverflow.com/questions/9439535/is-foreach-by-definition-guaranteed-to-iterate-the-subject-collection-sequential
 		//See: https://stackoverflow.com/questions/11319111/fold-and-foldleft-method-difference (linear execution vs fork-tree)
@@ -133,6 +149,6 @@ class DataSet(val data: IndexedSeq[IndexedSeq[Double]]) {
 		//Trim last new line - let calling code decide to add a new line
 		val trimmed = output.substring(0, output.length-1)
 
-		trimmed
+		return trimmed
 	}
 }

@@ -25,56 +25,56 @@ package object matrix {
 	 * Vector
 	 */
 	implicit class VectorAwareDouble(val num: Double) extends AnyVal {
-		def +(that:Vector): Vector = that.map(_ + num)
-		def -(that:Vector): Vector = that.map(_ - num)
-		def *(that:Vector): Vector = that.map(_ * num)
-		def /(that:Vector): Vector = that.map(_ / num)
+		def +(that:Vector): Vector = that.map(num + _)
+		def -(that:Vector): Vector = that.map(num - _)
+		def *(that:Vector): Vector = that.map(num * _)
+		def /(that:Vector): Vector = that.map(num / _)
 	}
 	implicit class VectorAwareFloat(val num: Float) extends AnyVal {
-		def +(that:Vector): Vector = that.map(_ + num)
-		def -(that:Vector): Vector = that.map(_ - num)
-		def *(that:Vector): Vector = that.map(_ * num)
-		def /(that:Vector): Vector = that.map(_ / num)
+		def +(that:Vector): Vector = that.map(num + _)
+		def -(that:Vector): Vector = that.map(num - _)
+		def *(that:Vector): Vector = that.map(num * _)
+		def /(that:Vector): Vector = that.map(num / _)
 	}
 	implicit class VectorAwareLong(val num: Long) extends AnyVal {
-		def +(that:Vector): Vector = that.map(_ + num)
-		def -(that:Vector): Vector = that.map(_ - num)
-		def *(that:Vector): Vector = that.map(_ * num)
-		def /(that:Vector): Vector = that.map(_ / num)
+		def +(that:Vector): Vector = that.map(num + _)
+		def -(that:Vector): Vector = that.map(num - _)
+		def *(that:Vector): Vector = that.map(num * _)
+		def /(that:Vector): Vector = that.map(num / _)
 	}
 	implicit class VectorAwareInt(val num: Int) extends AnyVal {
-		def +(that:Vector): Vector = that.map(_ + num)
-		def -(that:Vector): Vector = that.map(_ - num)
-		def *(that:Vector): Vector = that.map(_ * num)
-		def /(that:Vector): Vector = that.map(_ / num)
+		def +(that:Vector): Vector = that.map(num + _)
+		def -(that:Vector): Vector = that.map(num - _)
+		def *(that:Vector): Vector = that.map(num * _)
+		def /(that:Vector): Vector = that.map(num / _)
 	}
 
 	/*
 	 * Matrix
 	 */
 	implicit class MatrixAwareDouble(val num: Double) extends AnyVal {
-		def +(that:Matrix): Matrix = that.map(_ + num)
-		def -(that:Matrix): Matrix = that.map(_ - num)
-		def *(that:Matrix): Matrix = that.map(_ * num)
-		def /(that:Matrix): Matrix = that.map(_ / num)
+		def +(that:Matrix): Matrix = that.map(num + _)
+		def -(that:Matrix): Matrix = that.map(num - _)
+		def *(that:Matrix): Matrix = that.map(num * _)
+		def /(that:Matrix): Matrix = that.map(num / _)
 	}
 	implicit class MatrixAwareFloat(val num: Float) extends AnyVal {
-		def +(that:Matrix): Matrix = that.map(_ + num)
-		def -(that:Matrix): Matrix = that.map(_ - num)
-		def *(that:Matrix): Matrix = that.map(_ * num)
-		def /(that:Matrix): Matrix = that.map(_ / num)
+		def +(that:Matrix): Matrix = that.map(num + _)
+		def -(that:Matrix): Matrix = that.map(num - _)
+		def *(that:Matrix): Matrix = that.map(num * _)
+		def /(that:Matrix): Matrix = that.map(num / _)
 	}
 	implicit class MatrixAwareLong(val num: Long) extends AnyVal {
-		def +(that:Matrix): Matrix = that.map(_ + num)
-		def -(that:Matrix): Matrix = that.map(_ - num)
-		def *(that:Matrix): Matrix = that.map(_ * num)
-		def /(that:Matrix): Matrix = that.map(_ / num)
+		def +(that:Matrix): Matrix = that.map(num + _)
+		def -(that:Matrix): Matrix = that.map(num - _)
+		def *(that:Matrix): Matrix = that.map(num * _)
+		def /(that:Matrix): Matrix = that.map(num / _)
 	}
 	implicit class MatrixAwareInt(val num: Int) extends AnyVal {
-		def +(that:Matrix): Matrix = that.map(_ + num)
-		def -(that:Matrix): Matrix = that.map(_ - num)
-		def *(that:Matrix): Matrix = that.map(_ * num)
-		def /(that:Matrix): Matrix = that.map(_ / num)
+		def +(that:Matrix): Matrix = that.map(num + _)
+		def -(that:Matrix): Matrix = that.map(num - _)
+		def *(that:Matrix): Matrix = that.map(num * _)
+		def /(that:Matrix): Matrix = that.map(num / _)
 	}
 
 }

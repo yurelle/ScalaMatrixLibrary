@@ -394,10 +394,47 @@ object MatrixTest extends App {
 	 * End Vector Scalar Tests
 	 */
 
+	/*
+	 * Unary Tests
+	 */
+	{//Scalar - Negate Test 1A
+		val v1 = new Vector((1.0 to 6.0 by 1.0), vertical = true)
+		val v2 = -v1
+
+		assert(v2.isInstanceOf[Vector])
+		assert(listsEqual(
+			v2.data,
+			IndexedSeq[Double](-1, -2, -3, -4, -5, -6).grouped(1).toIndexedSeq
+		))
+	}
+	{//Scalar - Negate Test 1B
+		val v1 = new Vector((1.0 to 6.0 by 1.0), vertical = false)
+		val v2 = -v1
+
+		assert(v2.isInstanceOf[Vector])
+		assert(listsEqual(
+			v2.data,
+			IndexedSeq[Double](-1, -2, -3, -4, -5, -6).grouped(6).toIndexedSeq
+		))
+	}
+	{//Scalar - Negate Test 2
+		val m1 = new Matrix((1.0 to 6.0 by 1.0).grouped(3).toIndexedSeq)
+		val m2 = -m1
+
+		assert(m2.isInstanceOf[Matrix])
+		assert(listsEqual(
+			m2.data,
+			IndexedSeq[Double](-1, -2, -3, -4, -5, -6).grouped(3).toIndexedSeq
+		))
+	}
+	/*
+	 * End Unary Tests
+	 */
+
 	println("All Tests Passed!")
 
 	def listsEqual(l1: IndexedSeq[IndexedSeq[Double]], l2: IndexedSeq[IndexedSeq[Double]]): Boolean = {
-		val numDiff = (l1.flatten zip l2.flatten).count{case (l1_e, l2_e) => l1_e == l2_e}
-		return numDiff > 0
+		val numDiff = (l1.flatten zip l2.flatten).count{ case (l1_e, l2_e) => l1_e != l2_e }
+		return numDiff == 0
 	}
 }

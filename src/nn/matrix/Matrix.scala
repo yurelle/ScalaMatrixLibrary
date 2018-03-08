@@ -20,6 +20,12 @@ class Matrix(data: IndexedSeq[IndexedSeq[Double]])
 		return new Matrix(resultData)
 	}
 
+	//Forward element access notation to inner data structure. This allows treating the matrix like a native
+	//data structure (i.e. array, etc.). Ex: val myElement = myMatrix(3)(2)
+	def apply(rowIndex:Int): IndexedSeq[Double] = {
+		return this.data(rowIndex)
+	}
+
 	//Transpose
 	def transpose: Matrix = new Matrix(this.data.transpose)
 
@@ -39,6 +45,7 @@ class Matrix(data: IndexedSeq[IndexedSeq[Double]])
 	def -(num: Float): Matrix = this.map(_ - num)
 	def -(num: Long): Matrix = this.map(_ - num)
 	def -(num: Int): Matrix = this.map(_ - num)
+	def unary_-(): Matrix = this.map(0 - _)
 
 	def *(num: Double): Matrix = this.map(_ * num)
 	def *(num: Float): Matrix = this.map(_ * num)
@@ -53,6 +60,10 @@ class Matrix(data: IndexedSeq[IndexedSeq[Double]])
 	//Dot Product
 	//
 	//A Matrix times a vector always results in a vector
+	//TODO unless the matrix is actually a vector masquerading a matrix.
+	//TODO I.e. a Matrix object with only 1 column, or only 1 row.
+	//TODO This should never happen in our usage of the code, and this is
+	//TODO just a throwaway experiment, so probably don't need to fix.
 	def **(that: Vector): Vector = {
 		return new Matrix(this._doDotProduct(that)).toVector
 	}

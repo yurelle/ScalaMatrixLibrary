@@ -34,6 +34,13 @@ class Vector private(values: IndexedSeq[IndexedSeq[Double]])
 		)
 	}
 
+	def getValues(): IndexedSeq[Double] = {
+		return this.asHorizontal.data(0)
+	}
+
+	def apply(index: Int): Double = {
+		this.asHorizontal.data(0)(index)
+	}
 
 	def this(length:Int, vertical: Boolean) {
 		this(Array.fill[Double](length){0}.toIndexedSeq, vertical)
@@ -67,6 +74,7 @@ class Vector private(values: IndexedSeq[IndexedSeq[Double]])
 	def -(num: Float): Vector = this.map(_ - num)
 	def -(num: Long): Vector = this.map(_ - num)
 	def -(num: Int): Vector = this.map(_ - num)
+	def unary_-(): Vector = this.map(0 - _)
 
 	def *(num: Double): Vector = this.map(_ * num)
 	def *(num: Float): Vector = this.map(_ * num)
