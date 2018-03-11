@@ -1,11 +1,12 @@
-import java.awt.{Color, Dimension}
+import java.awt.{Color, Dimension, Event}
 import javax.swing.UIManager
 
 import nn.NN
 import nn.matrix.Vector
 
 import scala.collection.mutable.ListBuffer
-import scala.swing.event.MouseClicked
+import scala.swing._
+import scala.swing.event._
 import scala.util.Random
 import scala.swing.{BorderPanel, Component, Graphics2D, MainFrame, SimpleSwingApplication}
 
@@ -27,6 +28,7 @@ object Graph2D_XOR extends SimpleSwingApplication {
 		}
 	}
 
+	var INVERT_COORDS = false;
 	val canvas = new Component {
 		val dim = new Dimension(500,500)
 		minimumSize = dim
@@ -34,12 +36,19 @@ object Graph2D_XOR extends SimpleSwingApplication {
 		preferredSize = dim
 
 		//Inti Mouse Listener
+		listenTo(keys)
 		listenTo(mouse.clicks)
 		reactions += {
 			case e: MouseClicked => {
 				repaint()
 			}
+			case KeyPressed(_, Key.Space, _, _) => {
+				INVERT_COORDS = !INVERT_COORDS
+				repaint()
+			}
 		}
+		focusable = true
+		requestFocus
 
 		class BinaryCmpResults(val ROW_INDEX: Int, val COL_INDEX: Int) {
 			var OR:Double = _
@@ -110,21 +119,30 @@ object Graph2D_XOR extends SimpleSwingApplication {
 			resultData.foreach(gridRow => {
 				gridRow.foreach(outputs => {
 					//Calculate coordinates
-					val col_x = outputs.COL_INDEX * resolution
-					val col_y = outputs.ROW_INDEX * resolution
+					val (px, py) = if (INVERT_COORDS) {
+						(
+							((cols - outputs.COL_INDEX)-1) * resolution,
+							((rows - outputs.ROW_INDEX)-1) * resolution
+						)
+					} else {
+						(
+							outputs.COL_INDEX * resolution,
+							outputs.ROW_INDEX * resolution
+						)
+					}
 
 					//Paint Pixels
 					g.setColor(getColor(outputs.OR))
-					g.fillRect(col_x, col_y, resolution, resolution)
+					g.fillRect(px, py, resolution, resolution)
 
 					g.setColor(getColor(outputs.XOR))
-					g.fillRect(col_x + halfWidth, col_y, resolution, resolution)
+					g.fillRect(px + halfWidth, py, resolution, resolution)
 
 					g.setColor(getColor(outputs.AND))
-					g.fillRect(col_x, col_y + halfHeight, resolution, resolution)
+					g.fillRect(px, py + halfHeight, resolution, resolution)
 
 					g.setColor(getColor(outputs.NAND))
-					g.fillRect(col_x + halfWidth, col_y + halfHeight, resolution, resolution)
+					g.fillRect(px + halfWidth, py + halfHeight, resolution, resolution)
 				})
 			})
 
